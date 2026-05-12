@@ -1,0 +1,28 @@
+# C / firmware
+*.o
+obj/
+bin/
+*.exe
+*.out
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.env.*
+.venv/
+venv/
+
+# Node / dashboard
+node_modules/
+dist/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
