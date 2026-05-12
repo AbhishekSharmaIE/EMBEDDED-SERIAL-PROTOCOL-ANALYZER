@@ -1,12 +1,13 @@
 /**
  * @file test_frames.c
- * @brief Unit tests for UART and SPI frame simulators (assert-based)
+ * @brief Unit tests for UART, SPI, and I2C frame simulators (assert-based)
  *
  * ASPICE Reference: SWE.4 Software Unit Verification
  */
 #include <assert.h>
 #include <stdint.h>
 
+#include "i2c_sim.h"
 #include "spi_sim.h"
 #include "uart_sim.h"
 
@@ -151,6 +152,77 @@ static void test_spi_clock_spacing_scales_with_freq(void)
     assert(step_1 == (10U * step_10));
 }
 
+static void test_i2c_valid_write_one_byte(void)
+{
+    uint8_t payload[1] = { 0x12 };
+    i2c_frame_t f;
+
+    f = i2c_build_frame(0x48U, I2C_RW_WRITE, payload, 1U);
+    assert(f.error_code == I2C_OK);
+    assert(f.address == 0x48U);
+    assert(f.rw_bit == I2C_RW_WRITE);
+    assert(f.data_len == 1U);
+    assert(f.data[0U] == 0x12U);
+    assert(f.ack_received != false);
+}
+
+static void test_i2c_reserved_address_rejected(void)
+{
+    int v;
+
+    v = i2c_validate_address(0x00U);
+    assert(v != I2C_OK);
+}
+
+static void test_i2c_read_write_only_rw_differs(void)
+{
+    uint8_t payload[1] = { 0xAB };
+    i2c_frame_t fw;
+    i2c_frame_t fr;
+    uint8_t i;
+
+    fw = i2c_build_frame(0x20U, I2C_RW_WRITE, payload, 1U);
+    fr = i2c_build_frame(0x20U, I2C_RW_READ, payload, 1U);
+    assert(fw.error_code == I2C_OK);
+    assert(fr.error_code == I2C_OK);
+    assert(fw.address == fr.address);
+    assert(fw.data_len == fr.data_len);
+    assert(fw.ack_received == fr.ack_received);
+    assert(fw.data[0U] == fr.data[0U]);
+    assert(fw.rw_bit != fr.rw_bit);
+    for (i = 1U; i < I2C_MAX_DATA_BYTES; i++) {
+        assert(fw.data[i] == fr.data[i]);
+    }
+}
+
+static void test_i2c_ten_byte_payload(void)
+{
+    uint8_t payload[10];
+    i2c_frame_t f;
+    uint8_t i;
+
+    for (i = 0U; i < 10U; i++) {
+        payload[i] = (uint8_t)(0x10U + i);
+    }
+    f = i2c_build_frame(0x15U, I2C_RW_WRITE, payload, 10U);
+    assert(f.error_code == I2C_OK);
+    assert(f.data_len == 10U);
+    for (i = 0U; i < 10U; i++) {
+        assert(f.data[i] == payload[i]);
+    }
+}
+
+static void test_i2c_address_boundary_77_78(void)
+{
+    int v77;
+    int v78;
+
+    v77 = i2c_validate_address(0x77U);
+    v78 = i2c_validate_address(0x78U);
+    assert(v77 == I2C_OK);
+    assert(v78 != I2C_OK);
+}
+
 int main(void)
 {
     test_no_parity_valid();
@@ -162,5 +234,10 @@ int main(void)
     test_spi_msb_lsb_bit_reverse();
     test_spi_clock_edge_count();
     test_spi_clock_spacing_scales_with_freq();
+    test_i2c_valid_write_one_byte();
+    test_i2c_reserved_address_rejected();
+    test_i2c_read_write_only_rw_differs();
+    test_i2c_ten_byte_payload();
+    test_i2c_address_boundary_77_78();
     return 0;
 }

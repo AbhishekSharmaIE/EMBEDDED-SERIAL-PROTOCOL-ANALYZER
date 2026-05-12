@@ -13,6 +13,7 @@ TEST_SRC = $(TESTDIR)/test_frames.c
 TEST_OBJ = $(OBJDIR)/tests/test_frames.o
 UART_OBJ = $(OBJDIR)/uart_sim.o
 SPI_OBJ = $(OBJDIR)/spi_sim.o
+I2C_OBJ = $(OBJDIR)/i2c_sim.o
 TEST_BIN = $(BINDIR)/test_frames
 
 .PHONY: all clean test
@@ -28,8 +29,8 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 $(OBJDIR)/tests/%.o: $(TESTDIR)/%.c | $(OBJDIR)/tests
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TEST_BIN): $(UART_OBJ) $(SPI_OBJ) $(TEST_OBJ) | $(BINDIR)
-	$(CC) $(UART_OBJ) $(SPI_OBJ) $(TEST_OBJ) -o $@
+$(TEST_BIN): $(UART_OBJ) $(SPI_OBJ) $(I2C_OBJ) $(TEST_OBJ) | $(BINDIR)
+	$(CC) $(UART_OBJ) $(SPI_OBJ) $(I2C_OBJ) $(TEST_OBJ) -o $@
 
 $(OBJDIR) $(BINDIR) $(OBJDIR)/tests:
 	mkdir -p $@
