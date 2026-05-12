@@ -1,3 +1,5 @@
+[![CI](https://github.com/AbhishekSharmaIE/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhishekSharmaIE/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/actions/workflows/ci.yml)
+
 # Embedded Serial Protocol Analyzer
 
 MISRA-aware UART/SPI/I2C simulator with React visualization dashboard.

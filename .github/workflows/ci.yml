@@ -14,7 +14,16 @@ jobs:
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y gcc make
       - name: Build firmware
-        run: cd firmware && make all && make test
+        run: cd firmware && make all
+      - name: Run unit tests
+        run: cd firmware && make test
+      - name: Upload test log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-test-output
+          path: firmware/tests/test_output.txt
+          if-no-files-found: warn
 
   bridge-test:
     runs-on: ubuntu-latest
@@ -23,11 +32,31 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install dependencies
+      - name: Install build tools (firmware build on API startup)
+        run: sudo apt-get update && sudo apt-get install -y gcc make
+      - name: Install Python dependencies
         run: pip install -r bridge/requirements.txt
       - name: Import check
         working-directory: bridge
         run: python -c "from api import app; print('Bridge imports OK')"
+      - name: Health endpoint (uvicorn + curl)
+        run: |
+          set -euo pipefail
+          cd bridge
+          python -m uvicorn api:app --host 127.0.0.1 --port 8099 &
+          pid=$!
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8099/health; then
+              echo "health_ok"
+              kill "$pid"
+              wait "$pid" 2>/dev/null || true
+              exit 0
+            fi
+            sleep 1
+          done
+          kill "$pid" 2>/dev/null || true
+          echo "health check timed out"
+          exit 1
 
   dashboard-build:
     runs-on: ubuntu-latest

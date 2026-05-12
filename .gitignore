@@ -1,4 +1,5 @@
 # C / firmware
+firmware/tests/test_output.txt
 *.o
 obj/
 bin/

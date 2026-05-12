@@ -36,7 +36,7 @@ $(OBJDIR) $(BINDIR) $(OBJDIR)/tests:
 	mkdir -p $@
 
 test: $(TEST_BIN)
-	./$(TEST_BIN)
+	/bin/bash -o pipefail -c "./$(TEST_BIN) 2>&1 | tee $(TESTDIR)/test_output.txt"
 
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)
