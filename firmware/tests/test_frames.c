@@ -1,12 +1,13 @@
 /**
  * @file test_frames.c
- * @brief Unit tests for UART frame simulator (assert-based)
+ * @brief Unit tests for UART and SPI frame simulators (assert-based)
  *
  * ASPICE Reference: SWE.4 Software Unit Verification
  */
 #include <assert.h>
 #include <stdint.h>
 
+#include "spi_sim.h"
 #include "uart_sim.h"
 
 static void test_no_parity_valid(void)
@@ -86,6 +87,70 @@ static void test_all_data_bytes_valid(void)
     }
 }
 
+static void test_spi_mode0_builds(void)
+{
+    spi_config_t cfg;
+    spi_frame_t f;
+
+    cfg.mode = SPI_MODE_0;
+    cfg.cs_active_low = 1U;
+    cfg.bit_order = SPI_BIT_ORDER_MSB_FIRST;
+    f = spi_build_frame(0xA5, cfg);
+    assert(f.mode == SPI_MODE_0);
+    assert(f.data == 0xA5);
+    assert(f.mosi_bits[0U] == 1U);
+}
+
+static void test_spi_msb_lsb_bit_reverse(void)
+{
+    spi_config_t cfg_msb;
+    spi_config_t cfg_lsb;
+    spi_frame_t f_msb;
+    spi_frame_t f_lsb;
+    uint8_t i;
+    uint8_t data;
+
+    data = 0xC3;
+    cfg_msb.mode = SPI_MODE_0;
+    cfg_msb.cs_active_low = 1U;
+    cfg_msb.bit_order = SPI_BIT_ORDER_MSB_FIRST;
+    cfg_lsb.mode = SPI_MODE_0;
+    cfg_lsb.cs_active_low = 1U;
+    cfg_lsb.bit_order = SPI_BIT_ORDER_LSB_FIRST;
+    f_msb = spi_build_frame(data, cfg_msb);
+    f_lsb = spi_build_frame(data, cfg_lsb);
+
+    for (i = 0U; i < SPI_DATA_BITS; i++) {
+        assert(f_msb.mosi_bits[i] == f_lsb.mosi_bits[(uint8_t)(7U - i)]);
+    }
+}
+
+static void test_spi_clock_edge_count(void)
+{
+    assert(SPI_CLOCK_EDGES == (uint8_t)(2U * SPI_DATA_BITS));
+}
+
+static void test_spi_clock_spacing_scales_with_freq(void)
+{
+    spi_config_t cfg;
+    spi_frame_t f_1mhz;
+    spi_frame_t f_10mhz;
+    uint32_t step_1;
+    uint32_t step_10;
+
+    cfg.mode = SPI_MODE_0;
+    cfg.cs_active_low = 1U;
+    cfg.bit_order = SPI_BIT_ORDER_MSB_FIRST;
+    f_1mhz = spi_build_frame(0x00, cfg);
+    f_10mhz = spi_build_frame(0x00, cfg);
+    spi_simulate_clock_edges(&f_1mhz, 1000000U);
+    spi_simulate_clock_edges(&f_10mhz, 10000000U);
+
+    step_1 = f_1mhz.clock_edges[1U] - f_1mhz.clock_edges[0U];
+    step_10 = f_10mhz.clock_edges[1U] - f_10mhz.clock_edges[0U];
+    assert(step_1 == (10U * step_10));
+}
+
 int main(void)
 {
     test_no_parity_valid();
@@ -93,5 +158,9 @@ int main(void)
     test_corrupted_parity_fails();
     test_two_stop_bits_build();
     test_all_data_bytes_valid();
+    test_spi_mode0_builds();
+    test_spi_msb_lsb_bit_reverse();
+    test_spi_clock_edge_count();
+    test_spi_clock_spacing_scales_with_freq();
     return 0;
 }
