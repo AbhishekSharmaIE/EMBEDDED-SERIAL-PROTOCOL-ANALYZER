@@ -3,10 +3,16 @@ CFLAGS = -Wall -Wextra -std=c99 -Iinclude
 SRCDIR = src
 OBJDIR = obj
 BINDIR = bin
+TESTDIR = tests
 
 SOURCES = $(wildcard $(SRCDIR)/*.c)
 OBJECTS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
 TARGET = $(BINDIR)/protocol_analyzer
+
+TEST_SRC = $(TESTDIR)/test_frames.c
+TEST_OBJ = $(OBJDIR)/tests/test_frames.o
+UART_OBJ = $(OBJDIR)/uart_sim.o
+TEST_BIN = $(BINDIR)/test_frames
 
 .PHONY: all clean test
 
@@ -18,11 +24,17 @@ $(TARGET): $(OBJECTS) | $(BINDIR)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR) $(BINDIR):
+$(OBJDIR)/tests/%.o: $(TESTDIR)/%.c | $(OBJDIR)/tests
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TEST_BIN): $(UART_OBJ) $(TEST_OBJ) | $(BINDIR)
+	$(CC) $(UART_OBJ) $(TEST_OBJ) -o $@
+
+$(OBJDIR) $(BINDIR) $(OBJDIR)/tests:
 	mkdir -p $@
+
+test: $(TEST_BIN)
+	./$(TEST_BIN)
 
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)
-
-test:
-	@echo "No unit tests yet (scaffold)."
