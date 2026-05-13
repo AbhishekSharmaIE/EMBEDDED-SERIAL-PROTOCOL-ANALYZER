@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Vercel build: firmware binary + dashboard -> bridge/_vercel_public (bundled into the Python serverless app).
-# Also copies dist -> ./public when the Vercel project has "Output Directory" = public (otherwise the build errors).
-# Do NOT add "outputDirectory": "public" to vercel.json — that makes a static-only deploy; /health and /pa/* get NOT_FOUND.
+# Also fills ./public for Vercel projects with "Output Directory" = public (build validation).
+# Do NOT put index.html or 404.html in public/: Vercel would serve the whole site as static CDN-only
+# and never route /health or /pa/* to the FastAPI function (edge NOT_FOUND). Only mirror hashed /assets/*
+# (and other root files like vite.svg) so the output directory exists and /assets can cache on the CDN.
 # FastAPI serves /, /assets, /pa/*, /health from _vercel_public (see bridge/api.py).
 # If the builder has no gcc, copies deploy/vercel/protocol_analyzer_linux_amd64 (refresh after C changes).
 set -euo pipefail
@@ -34,6 +36,21 @@ cp -r dist "${ROOT}/bridge/_vercel_public"
 
 rm -rf "${ROOT}/public"
 mkdir -p "${ROOT}/public"
-cp -r dist/. "${ROOT}/public/"
+if [[ -d dist/assets ]]; then
+  mkdir -p "${ROOT}/public/assets"
+  cp -r dist/assets/. "${ROOT}/public/assets/"
+fi
+shopt -s nullglob
+for f in dist/*; do
+  base="$(basename "$f")"
+  case "$base" in
+    assets|index.html|404.html) continue ;;
+  esac
+  cp -a "$f" "${ROOT}/public/"
+done
+shopt -u nullglob
+if [[ -z "$(find "${ROOT}/public" -mindepth 1 -print -quit 2>/dev/null)" ]]; then
+  printf '{}' > "${ROOT}/public/.vercel-output-dir-marker.json"
+fi
 
-echo "Vercel build OK: dashboard -> bridge/_vercel_public/ + public/, firmware -> firmware/bin/protocol_analyzer"
+echo "Vercel build OK: dashboard -> bridge/_vercel_public/ + public/ (assets only), firmware -> firmware/bin/protocol_analyzer"

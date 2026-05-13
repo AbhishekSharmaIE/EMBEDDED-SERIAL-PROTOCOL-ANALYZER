@@ -98,8 +98,7 @@ async function parseError(res: Response): Promise<string> {
   } catch {
     if (res.status === 404 && text.includes("NOT_FOUND")) {
       return (
-        "API returned 404 (edge NOT_FOUND). On Vercel, paths under `/api/*` are reserved for the file-based `api/` serverless router; this app uses `/pa/*` instead. " +
-        "Confirm Root Directory is the repo root, clear Install Command override, redeploy latest main."
+        "API returned 404 (edge NOT_FOUND). The Python app did not receive the request. On Vercel: set Framework to FastAPI (this repo uses vercel.json \"framework\": \"fastapi\"), do not put the SPA index.html in public/ for static-only output, avoid vercel.json outputDirectory public, use /pa/* (not /api/*). Confirm Root Directory is the repo root, clear Install Command override, redeploy latest main."
       );
     }
     return text.length > 0 ? text : res.statusText;
