@@ -96,6 +96,12 @@ async function parseError(res: Response): Promise<string> {
     if (j.detail != null) return JSON.stringify(j.detail);
     return text.length > 0 ? text : res.statusText;
   } catch {
+    if (res.status === 404 && text.includes("NOT_FOUND")) {
+      return (
+        "API returned 404 (edge NOT_FOUND). On Vercel: clear Project → Settings → Build & Development → " +
+        "Output Directory (must be empty), clear Install Command override, redeploy latest main so POST /api/* reaches FastAPI."
+      );
+    }
     return text.length > 0 ? text : res.statusText;
   }
 }

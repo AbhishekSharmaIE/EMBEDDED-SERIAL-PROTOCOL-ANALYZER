@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Vercel build: firmware binary + static dashboard into ./public (served by Vercel CDN).
+# Vercel build: firmware binary + dashboard bundled under bridge/_vercel_public (served by FastAPI).
+# We intentionally do NOT populate ./public: a static public/ layer can answer POST /api/* with a CDN 404
+# ("NOT_FOUND dub1::…") before requests reach the Python function.
 # If the builder has no gcc, copies deploy/vercel/protocol_analyzer_linux_amd64 (refresh after C changes).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -26,10 +28,8 @@ cd "${ROOT}/dashboard"
 npm ci
 VITE_API_URL=relative npm run build
 
-rm -rf "${ROOT}/public"
-mkdir -p "${ROOT}/public"
-cp -r dist/. "${ROOT}/public/"
-# Bundle UI next to FastAPI so Vercel's Python artifact includes it (public/ alone may not ship into the function).
 rm -rf "${ROOT}/bridge/_vercel_public"
 cp -r dist "${ROOT}/bridge/_vercel_public"
-echo "Vercel build OK: dashboard -> public/ + bridge/_vercel_public/, firmware -> firmware/bin/protocol_analyzer"
+# Remove stale public/ from older builds so Vercel does not treat the project as a static-only edge.
+rm -rf "${ROOT}/public"
+echo "Vercel build OK: dashboard -> bridge/_vercel_public/, firmware -> firmware/bin/protocol_analyzer"
