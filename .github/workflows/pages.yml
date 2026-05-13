@@ -1,5 +1,7 @@
 # Build the Vite dashboard and publish to GitHub Pages (project site).
-# After the first successful run, enable Pages: Settings → Pages → Source: GitHub Actions.
+#
+# REQUIRED (once per repo): Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# If Source is still "Deploy from a branch", deploy-pages returns 404 when creating the deployment.
 
 name: Pages
 
@@ -10,8 +12,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -20,11 +20,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - name: Install and build dashboard
@@ -44,6 +46,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # Required by actions/deploy-pages (OIDC + Pages API); workflow-level permissions are not enough for some runs.
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
