@@ -13,6 +13,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Composite actions still on Node 20 use Node 24 when the runner supports it (GitHub deprecation notice).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
 
@@ -24,9 +28,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
