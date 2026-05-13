@@ -126,7 +126,7 @@ Without `PUBLIC_BRIDGE_URL`, production builds keep calling `http://localhost:80
 
 The repo is configured for a **single Vercel project** at the repository root:
 
-- **[`vercel.json`](vercel.json)** — `installCommand` installs Python deps + dashboard npm packages; `buildCommand` runs [`scripts/vercel-build.sh`](scripts/vercel-build.sh) (firmware ELF + `dashboard` build with `VITE_API_URL=relative`, output copied to **`public/`**).
+- **[`vercel.json`](vercel.json)** — `installCommand` runs [`scripts/vercel-install.sh`](scripts/vercel-install.sh): **`uv pip install --system`** when `uv` is available (Vercel’s Python is **PEP 668** / `uv`-managed, so plain `pip install` fails with “externally-managed-environment”), otherwise **`pip install --break-system-packages`**, then `npm ci` in `dashboard/`. **`buildCommand`** runs [`scripts/vercel-build.sh`](scripts/vercel-build.sh) (firmware ELF + dashboard build with `VITE_API_URL=relative`, output copied to **`public/`**).
 - **[`pyproject.toml`](pyproject.toml)** — `[tool.vercel] entrypoint = "bridge.api:app"` so Vercel runs the FastAPI app as one function (same routes as local uvicorn: `/health`, `/api/...`).
 - **[`deploy/vercel/protocol_analyzer_linux_amd64`](deploy/vercel/protocol_analyzer_linux_amd64)** — prebuilt **Linux x86-64** firmware CLI used when the Vercel builder has no `gcc` (see [`deploy/vercel/README.txt`](deploy/vercel/README.txt) to refresh after C changes).
 
