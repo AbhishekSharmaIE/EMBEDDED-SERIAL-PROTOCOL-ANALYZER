@@ -139,6 +139,8 @@ The repo is configured for a **single Vercel project** at the repository root:
 4. **Install Command must not be overridden in the dashboard.** In **Project → Settings → Build & Development**, clear **Install Command** (leave empty so **`vercel.json`** is used). If the build log still shows `pip install -r requirements.txt && cd dashboard && npm ci`, you are either on an **old commit** (before `b71c279`) or a **saved override** is ignoring the repo.
 5. Redeploy **latest `main`**. The install step should show the `uv pip install --system` / `sh -c '...'` line from `vercel.json`, not plain `pip install -r requirements.txt`.
 6. Optional environment variables in the Vercel project:
+   - **`SKIP_FIRMWARE_BUILD`** — set to **`1`** for Production and Preview if you want to be explicit (the repo also sets it in **`vercel.json`** `env`). Startup **skips `make`** when this is set or when **`VERCEL=1`** is visible at runtime.
+   - **System environment variables** — in **Project → Settings → Environment Variables**, enable **Enable access to System Environment Variables** so **`VERCEL`**, **`VERCEL_ENV`**, etc. are available (optional; startup tolerates a failed `make` when the **`protocol_analyzer`** binary already exists from the build).
    - **`CORS_EXTRA_ORIGINS`** — add your production URL(s), comma-separated (e.g. `https://your-app.vercel.app`). Preview deployments use `https://*.vercel.app`; when **`VERCEL=1`** (set in `vercel.json`), the bridge also allows that pattern via **`allow_origin_regex`**.
    - **`CORS_ORIGIN_REGEX`** — override the preview regex if needed.
 7. After changing firmware C code, rebuild the prebuilt binary on Linux and commit (see `deploy/vercel/README.txt`).

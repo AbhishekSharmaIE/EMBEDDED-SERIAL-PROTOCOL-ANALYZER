@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import subprocess
 from contextlib import asynccontextmanager
@@ -34,9 +35,18 @@ BINARY = _path_from_env("PROTOCOL_ANALYZER", FW_DIR / "bin" / "protocol_analyzer
 # serverless router; a monolithic FastAPI app in bridge/ never receives those paths (edge NOT_FOUND).
 _PA = "/pa"
 
+_log = logging.getLogger(__name__)
+
 
 def _skip_firmware_build() -> bool:
-    return os.environ.get("SKIP_FIRMWARE_BUILD", "").lower() in ("1", "true", "yes")
+    """Skip `make` when explicitly requested or on Vercel (no toolchain by default)."""
+    v = os.environ.get("SKIP_FIRMWARE_BUILD", "").lower()
+    if v in ("1", "true", "yes"):
+        return True
+    # Vercel sets VERCEL=1 only if "System Environment Variables" is enabled; do not rely on it alone.
+    if os.environ.get("VERCEL", "").lower() in ("1", "true", "yes"):
+        return True
+    return False
 
 
 def _run_make_all() -> None:
@@ -54,7 +64,22 @@ def _run_make_all() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not _skip_firmware_build():
-        await asyncio.to_thread(_run_make_all)
+        try:
+            await asyncio.to_thread(_run_make_all)
+        except Exception as exc:
+            # Typical on Vercel without gcc, or when SKIP_FIRMWARE_BUILD was not passed through to runtime.
+            if BINARY.is_file():
+                _log.warning(
+                    "firmware make at startup failed; continuing with existing binary at %s: %s",
+                    BINARY,
+                    exc,
+                )
+            else:
+                raise RuntimeError(
+                    "firmware build failed and protocol_analyzer is missing. "
+                    "On Vercel set SKIP_FIRMWARE_BUILD=1 (see vercel.json env) or enable system env vars; "
+                    "locally run `make -C firmware all`."
+                ) from exc
     yield
 
 
