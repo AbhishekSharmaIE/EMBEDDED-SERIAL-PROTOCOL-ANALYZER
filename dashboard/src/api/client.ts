@@ -1,4 +1,27 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const API_BASE: string =
+  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "" : "http://localhost:8000");
+
+function apiUrl(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  if (API_BASE === "") return p;
+  return `${String(API_BASE).replace(/\/$/, "")}${p}`;
+}
+
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const url = apiUrl(path);
+  try {
+    return await fetch(url, init);
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw new Error(
+        "Cannot reach the API (network error). Start the bridge on port 8000, e.g. " +
+          "`cd bridge && . .venv/bin/activate && python -m uvicorn api:app --host 127.0.0.1 --port 8000`. " +
+          "With `npm run dev`, requests use a Vite proxy to 127.0.0.1:8000.",
+      );
+    }
+    throw e;
+  }
+}
 
 export type Parity = "none" | "even" | "odd";
 
@@ -63,7 +86,7 @@ async function parseError(res: Response): Promise<string> {
 }
 
 export async function postUartFrame(body: UartFrameRequest): Promise<UartFrameResponse> {
-  const res = await fetch(`${API_BASE}/api/uart/frame`, {
+  const res = await apiFetch("/api/uart/frame", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -73,7 +96,7 @@ export async function postUartFrame(body: UartFrameRequest): Promise<UartFrameRe
 }
 
 export async function postSpiFrame(body: SpiFrameRequest): Promise<SpiFrameResponse> {
-  const res = await fetch(`${API_BASE}/api/spi/frame`, {
+  const res = await apiFetch("/api/spi/frame", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -83,7 +106,7 @@ export async function postSpiFrame(body: SpiFrameRequest): Promise<SpiFrameRespo
 }
 
 export async function postI2cFrame(body: I2cFrameRequest): Promise<I2cFrameResponse> {
-  const res = await fetch(`${API_BASE}/api/i2c/frame`, {
+  const res = await apiFetch("/api/i2c/frame", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -93,7 +116,7 @@ export async function postI2cFrame(body: I2cFrameRequest): Promise<I2cFrameRespo
 }
 
 export async function getProtocols(): Promise<{ id: string; name: string; description: string }[]> {
-  const res = await fetch(`${API_BASE}/api/protocols`);
+  const res = await apiFetch("/api/protocols");
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
 }
