@@ -22,7 +22,6 @@ services:
     volumes:
       - firmware-bin:/fw/bin:ro
     environment:
-      SKIP_FIRMWARE_BUILD: "1"
       PROTOCOL_ANALYZER: /fw/bin/protocol_analyzer
       APP_ROOT: /app
       FW_DIR: /fw

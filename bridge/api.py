@@ -1,13 +1,10 @@
-"""FastAPI bridge: builds firmware on startup and exposes REST wrappers around the C CLI."""
+"""FastAPI bridge: exposes REST wrappers around the C firmware CLI."""
 
 from __future__ import annotations
 
-import asyncio
 import json
-import logging
 import os
 import subprocess
-from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
 
@@ -29,111 +26,28 @@ _here = Path(__file__).resolve()
 _default_root = _here.parent.parent
 ROOT = _path_from_env("APP_ROOT", _default_root)
 FW_DIR = _path_from_env("FW_DIR", ROOT / "firmware")
-# Vercel bundles `bridge/` with `bridge.api`; copy the ELF beside this file in vercel-build.sh (see scripts/vercel-build.sh).
+# Vercel: vercel-build.sh copies the ELF next to this file so it ships with the `bridge` package.
 _bundled_cli = _here / "protocol_analyzer"
 _default_binary = _bundled_cli if _bundled_cli.is_file() else (FW_DIR / "bin" / "protocol_analyzer")
 BINARY = _path_from_env("PROTOCOL_ANALYZER", _default_binary)
 
-# REST prefix is NOT "/api/..." — on Vercel, "/api/*" is reserved for the file-based /api/*.py
-# serverless router; a monolithic FastAPI app in bridge/ never receives those paths (edge NOT_FOUND).
+# REST prefix is NOT "/api/..." — on Vercel, "/api/*" is reserved for the file-based `api/*.py` router.
 _PA = "/pa"
-
-_log = logging.getLogger(__name__)
-
-
-def _skip_firmware_build() -> bool:
-    """Skip `make` when explicitly requested or on Vercel (no toolchain by default)."""
-    v = os.environ.get("SKIP_FIRMWARE_BUILD", "").lower()
-    if v in ("1", "true", "yes"):
-        return True
-    # Vercel sets VERCEL=1 only if "System Environment Variables" is enabled; do not rely on it alone.
-    if os.environ.get("VERCEL", "").lower() in ("1", "true", "yes"):
-        return True
-    return False
-
-
-def _run_make_all() -> None:
-    result = subprocess.run(
-        ["make", "-C", str(FW_DIR), "all"],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        tail = (result.stderr or result.stdout or "").strip()
-        raise RuntimeError(tail or "firmware build failed")
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # If the ELF is already present (e.g. built in CI / copied in vercel-build.sh), never run `make` here.
-    # Vercel builders usually have no gcc; `make` would fail and tear down the whole ASGI app (500 FUNCTION_INVOCATION_FAILED).
-    need_make = not _skip_firmware_build() and not BINARY.is_file()
-    if not need_make:
-        yield
-        return
-    try:
-        await asyncio.to_thread(_run_make_all)
-    except Exception as exc:
-        if BINARY.is_file():
-            _log.warning(
-                "firmware make at startup failed; continuing with existing binary at %s: %s",
-                BINARY,
-                exc,
-            )
-        else:
-            raise RuntimeError(
-                "firmware build failed and protocol_analyzer is missing. "
-                "On Vercel set SKIP_FIRMWARE_BUILD=1 (see vercel.json env) or enable system env vars; "
-                "locally run `make -C firmware all`."
-            ) from exc
-    if not BINARY.is_file():
-        raise RuntimeError(
-            "protocol_analyzer is still missing after `make`. "
-            "Ensure bridge/protocol_analyzer exists (see scripts/vercel-build.sh)."
-        )
-    yield
-
 
 app = FastAPI(
     title="Embedded Serial Protocol Analyzer",
     description="Bridge between C firmware and the React dashboard.",
     version="0.2.0",
-    lifespan=lifespan,
 )
 
-
-def _cors_origins() -> list[str]:
-    origins = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ]
-    extra = os.environ.get("CORS_EXTRA_ORIGINS", "")
-    if extra.strip():
-        origins.extend([o.strip() for o in extra.split(",") if o.strip()])
-    return origins
-
-
-def _cors_origin_regex() -> str | None:
-    raw = os.environ.get("CORS_ORIGIN_REGEX", "").strip()
-    if raw:
-        return raw
-    if os.environ.get("VERCEL", "").lower() in ("1", "true", "yes"):
-        return r"https://.*\.vercel\.app"
-    return None
-
-
-_cors_kw: dict[str, Any] = {
-    "allow_origins": _cors_origins(),
-    "allow_credentials": False,
-    "allow_methods": ["*"],
-    "allow_headers": ["*"],
-}
-_rx = _cors_origin_regex()
-if _rx is not None:
-    _cors_kw["allow_origin_regex"] = _rx
-
-app.add_middleware(CORSMiddleware, **_cors_kw)
+# Broad CORS: avoids Starlette `allow_origin_regex` edge cases on some serverless stacks; credentials stay off.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def _run_firmware(args: list[str]) -> dict[str, Any]:
@@ -253,7 +167,7 @@ def i2c_frame(body: I2cFrameRequest) -> dict[str, Any]:
 
 
 def _register_spa_static() -> None:
-    """Serve the Vite build when bundled with the app (Vercel serverless may not attach public/ to the function)."""
+    """Serve the Vite build from bridge/_vercel_public (or repo public/) when bundled with the app."""
     spa = _here / "_vercel_public"
     if not (spa / "index.html").is_file():
         alt = ROOT / "public"
