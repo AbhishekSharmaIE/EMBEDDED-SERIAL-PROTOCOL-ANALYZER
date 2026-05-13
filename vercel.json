@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "public",
   "installCommand": "sh -c 'if command -v uv >/dev/null 2>&1; then uv pip install --system -r requirements.txt; else pip install --break-system-packages -r requirements.txt; fi && cd dashboard && npm ci'",
   "buildCommand": "bash scripts/vercel-build.sh",
   "env": {

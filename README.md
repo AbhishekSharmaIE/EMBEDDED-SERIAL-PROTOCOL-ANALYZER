@@ -126,14 +126,14 @@ Without `PUBLIC_BRIDGE_URL`, production builds keep calling `http://localhost:80
 
 The repo is configured for a **single Vercel project** at the repository root:
 
-- **[`vercel.json`](vercel.json)** — `installCommand` is a **POSIX `sh -c` one-liner** (`uv pip install --system` or `pip install --break-system-packages`), then **`npm ci`** in `dashboard/`. **`buildCommand`** runs [`scripts/vercel-build.sh`](scripts/vercel-build.sh) (firmware ELF + dashboard build with `VITE_API_URL=relative`). The UI is written to **`public/`** (required **`outputDirectory`** for this project) and duplicated under **`bridge/_vercel_public/`** so FastAPI can serve **`/`** and **`/assets`** from the Python bundle. [`scripts/vercel-install.sh`](scripts/vercel-install.sh) mirrors install logic for local checks.
+- **[`vercel.json`](vercel.json)** — `installCommand` is a **POSIX `sh -c` one-liner** (`uv pip install --system` or `pip install --break-system-packages`), then **`npm ci`** in `dashboard/`. **`buildCommand`** runs [`scripts/vercel-build.sh`](scripts/vercel-build.sh) (firmware ELF + dashboard build with `VITE_API_URL=relative`). The UI is written under **`bridge/_vercel_public/`** and served by FastAPI (**`/`, `/assets/*`, `/pa/*`, `/health`**). Do **not** set **`outputDirectory` to `public`**: Vercel then deploys **static-only**, and **`/pa/*`** and **`/health`** return edge **`NOT_FOUND`**. [`scripts/vercel-install.sh`](scripts/vercel-install.sh) mirrors install logic for local checks.
 - **[`pyproject.toml`](pyproject.toml)** — `[tool.vercel] entrypoint = "bridge.api:app"` so Vercel runs the FastAPI app as one function (same routes as local uvicorn: `/health`, `/pa/...`).
 - **[`deploy/vercel/protocol_analyzer_linux_amd64`](deploy/vercel/protocol_analyzer_linux_amd64)** — prebuilt **Linux x86-64** firmware CLI used when the Vercel builder has no `gcc` (see [`deploy/vercel/README.txt`](deploy/vercel/README.txt) to refresh after C changes).
 
 ### Deploy steps
 
 1. Import the GitHub repo in [Vercel](https://vercel.com/new) and deploy with defaults: **Root Directory** = repository root (`.`). Do **not** set the root to `dashboard/` only, or `vercel.json` and the Python app will not apply.
-2. **Output Directory** should match the repo: **`public`** (set in [`vercel.json`](vercel.json) as `outputDirectory`). If the Vercel dashboard overrides it to something else (or leaves an old value), the build can fail with “No Output Directory named public found”.
+2. **Output Directory** in the Vercel project dashboard should be **empty / default** (do **not** force **`public`**). A static output directory deploys only the Vite files and **skips routing** to the Python app, which breaks **`/health`** and **`/pa/*`**.
 3. **Install Command must not be overridden in the dashboard.** In **Project → Settings → Build & Development**, clear **Install Command** (leave empty so **`vercel.json`** is used). If the build log still shows `pip install -r requirements.txt && cd dashboard && npm ci`, you are either on an **old commit** (before `b71c279`) or a **saved override** is ignoring the repo.
 4. Redeploy **latest `main`**. The install step should show the `uv pip install --system` / `sh -c '...'` line from `vercel.json`, not plain `pip install -r requirements.txt`.
 5. Optional environment variables in the Vercel project:
@@ -143,7 +143,7 @@ The repo is configured for a **single Vercel project** at the repository root:
 
 The dashboard calls **`/pa/*` and `/health` on the same origin** (`VITE_API_URL=relative` at build time), so the live UI and bridge stay on one deployment. (Paths are **`/pa/*`**, not **`/api/*`**: on Vercel, **`/api/*`** is reserved for the file-based `api/` serverless layout and will not reach a monolithic FastAPI app in `bridge/`.)
 
-**“NOT_FOUND” / “The page could not be found”** in the UI after **Analyze** usually means **POST `/pa/*` got a CDN 404** (response body is shown in the red error box). Typical causes: **Install Command** override, wrong **Root Directory**, or a project preset that never deploys the Python function. The build keeps both **`public/`** (Vercel output) and **`bridge/_vercel_public/`** (FastAPI bundle) so **`/`, `/assets/*`, `/pa/*`, and `/health`** can be served correctly.
+**“NOT_FOUND” / “The page could not be found”** in the UI after **Analyze** usually means **POST `/pa/*` hit the edge with no serverless route** (response body is shown in the red error box). Typical causes: **`outputDirectory` / “Output Directory: public”** (static-only deploy), **Install Command** override, wrong **Root Directory**, or a preset that never deploys the Python function. **`curl https://<your-app>.vercel.app/health`** should return **`{"status":"ok"}`**; if it is **`NOT_FOUND`**, the Python app is not deployed or not routed.
 
 ## Further documentation
 
