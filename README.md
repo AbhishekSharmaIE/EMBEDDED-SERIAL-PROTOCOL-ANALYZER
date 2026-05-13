@@ -1,4 +1,5 @@
 [![CI](https://github.com/AbhishekSharmaIE/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhishekSharmaIE/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/actions/workflows/ci.yml)
+[![Pages](https://github.com/AbhishekSharmaIE/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/actions/workflows/pages.yml/badge.svg)](https://github.com/AbhishekSharmaIE/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/actions/workflows/pages.yml)
 
 # Embedded Serial Protocol Analyzer
 
@@ -94,6 +95,24 @@ npm run dev
 ```
 
 Open the URL shown in the terminal (typically `http://localhost:5173`). With `npm run dev`, `/api` and `/health` are proxied to `http://127.0.0.1:8000`, so start the bridge there (or set `VITE_API_URL` at build time for other setups).
+
+## GitHub Pages (hosted dashboard)
+
+The workflow [.github/workflows/pages.yml](.github/workflows/pages.yml) builds the dashboard with the correct [Vite `base`](https://vite.dev/config/shared-options.html#base) for a **project site** and deploys the `dist/` folder to GitHub Pages on every push to `main`.
+
+1. In the GitHub repo: **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from a branch”).
+2. Push to `main` (or run the **Pages** workflow manually). When it finishes, open  
+   `https://<your-username>.github.io/<repository-name>/`  
+   (for this fork: `https://abhisheksharmaie.github.io/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/` — GitHub may normalize hostname casing).
+
+**API from the hosted UI:** GitHub Pages only serves static files. The bridge still runs on your machine, Docker, or another host. To point the Pages build at a **public HTTPS** API:
+
+- Add a repository **variable** named `PUBLIC_BRIDGE_URL` (for example `https://your-api.example.com`) with no trailing slash. The workflow passes it as `VITE_API_URL` at build time.
+- On the bridge, set **`CORS_EXTRA_ORIGINS`** to the Pages origin (for project sites the browser `Origin` is typically `https://<username>.github.io`). Example:  
+  `CORS_EXTRA_ORIGINS=https://abhisheksharmaie.github.io`  
+  (comma-separated if you need more than one).
+
+Without `PUBLIC_BRIDGE_URL`, production builds keep calling `http://localhost:8000`, which is appropriate for Docker or local static preview, not for visitors on `github.io`.
 
 ## Further documentation
 

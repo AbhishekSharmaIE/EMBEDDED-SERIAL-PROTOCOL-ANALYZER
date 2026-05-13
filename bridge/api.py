@@ -59,12 +59,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+
+def _cors_origins() -> list[str]:
+    origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-    ],
+    ]
+    extra = os.environ.get("CORS_EXTRA_ORIGINS", "")
+    if extra.strip():
+        origins.extend([o.strip() for o in extra.split(",") if o.strip()])
+    return origins
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

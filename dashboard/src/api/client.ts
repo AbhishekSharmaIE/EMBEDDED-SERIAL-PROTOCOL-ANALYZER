@@ -1,5 +1,15 @@
-const API_BASE: string =
-  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "" : "http://localhost:8000");
+function resolvedApiBase(): string {
+  const raw = import.meta.env.VITE_API_URL;
+  if (raw !== undefined && raw !== null) {
+    const s = String(raw).trim();
+    if (s.length > 0) {
+      return s.replace(/\/$/, "");
+    }
+  }
+  return import.meta.env.DEV ? "" : "http://localhost:8000";
+}
+
+const API_BASE: string = resolvedApiBase();
 
 function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
