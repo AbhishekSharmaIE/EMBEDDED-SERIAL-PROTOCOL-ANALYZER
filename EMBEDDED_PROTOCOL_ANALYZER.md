@@ -1,7 +1,7 @@
 # 🔬 Embedded Serial Protocol Analyzer
 ### A MISRA-aware, ASPICE-aligned embedded C + React dashboard project
 
-> **Recruiter Signal:** Demonstrates UART/SPI/I2C protocol knowledge, MISRA C compliance awareness, safety-critical coding practices, and a modern visualization dashboard — all in one repo.
+> **What stands out:** Demonstrates UART/SPI/I2C protocol knowledge, MISRA C compliance awareness, safety-critical coding practices, and a modern visualization dashboard — all in one repo.
 
 ---
 
@@ -69,7 +69,7 @@ embedded-protocol-analyzer/
 |---|---|---|
 | Protocol Engine | C99, GCC | Embedded-realistic, MISRA-applicable |
 | Bridge API | Python + FastAPI | Lightweight, easy to extend |
-| Dashboard | React + TypeScript + Recharts | Recruiter-visible, interactive |
+| Dashboard | React + TypeScript + Recharts | Demo-friendly, interactive |
 | CI/CD | GitHub Actions | Shows DevOps awareness |
 | Containerization | Docker Compose | One-command startup |
 
@@ -261,7 +261,7 @@ Push.
 
 ---
 
-## PROMPT 5 — React Dashboard (THE RECRUITER WOW MOMENT)
+## PROMPT 5 — React Dashboard (the visual showcase)
 
 ```
 In dashboard/src/, build a stunning React TypeScript dashboard. This must be visually impressive — like something a senior frontend engineer at a fintech or automotive startup would build.
@@ -433,7 +433,7 @@ Push.
 ## PROMPT 9 — Polish & Demo-Ready Final Pass
 
 ```
-Final polish pass — make this repo recruiter-ready:
+Final polish pass — demo-ready polish:
 
 1. README.md final version:
    - Add CI badge (from prompt 6)
@@ -450,7 +450,7 @@ Final polish pass — make this repo recruiter-ready:
    - What ASPICE is
    - Why this matters for automotive embedded roles
    
-   This means even a non-technical recruiter who opens the dashboard understands why it's impressive.
+   This means even a non-technical reviewer who opens the dashboard understands why it's impressive.
 
 4. Add a loading animation on the dashboard home screen:
    - Simulates an oscilloscope "scanning" — a green line sweeps left to right
@@ -459,7 +459,7 @@ Final polish pass — make this repo recruiter-ready:
 
 5. Ensure all C functions have Doxygen-style comments.
 
-Commit: "polish: recruiter-ready README, about modal, oscilloscope loading screen"
+Commit: "polish: README, about modal, oscilloscope loading screen"
 Push.
 
 Tag the release: git tag v1.0.0 && git push --tags
