@@ -98,8 +98,8 @@ async function parseError(res: Response): Promise<string> {
   } catch {
     if (res.status === 404 && text.includes("NOT_FOUND")) {
       return (
-        "API returned 404 (edge NOT_FOUND). On Vercel: clear Project → Settings → Build & Development → " +
-        "Output Directory (must be empty), clear Install Command override, redeploy latest main so POST /api/* reaches FastAPI."
+        "API returned 404 (edge NOT_FOUND). On Vercel: confirm Root Directory is the repo root, clear a custom Install Command override, " +
+        "and that the Python + FastAPI deployment (pyproject tool.vercel entrypoint) is active—then redeploy latest main."
       );
     }
     return text.length > 0 ? text : res.statusText;
