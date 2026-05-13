@@ -126,19 +126,23 @@ Without `PUBLIC_BRIDGE_URL`, production builds keep calling `http://localhost:80
 
 The repo is configured for a **single Vercel project** at the repository root:
 
-- **[`vercel.json`](vercel.json)** — `installCommand` runs [`scripts/vercel-install.sh`](scripts/vercel-install.sh): **`uv pip install --system`** when `uv` is available (Vercel’s Python is **PEP 668** / `uv`-managed, so plain `pip install` fails with “externally-managed-environment”), otherwise **`pip install --break-system-packages`**, then `npm ci` in `dashboard/`. **`buildCommand`** runs [`scripts/vercel-build.sh`](scripts/vercel-build.sh) (firmware ELF + dashboard build with `VITE_API_URL=relative`, output copied to **`public/`**).
+- **[`vercel.json`](vercel.json)** — `installCommand` is a **POSIX `sh -c` one-liner**: use **`uv pip install --system`** when `uv` exists (PEP 668), else **`pip install --break-system-packages`**, then **`npm ci`** in `dashboard/`. **`buildCommand`** runs [`scripts/vercel-build.sh`](scripts/vercel-build.sh) (firmware ELF + dashboard build with `VITE_API_URL=relative`, output copied to **`public/`**). [`scripts/vercel-install.sh`](scripts/vercel-install.sh) mirrors the same logic for local checks.
 - **[`pyproject.toml`](pyproject.toml)** — `[tool.vercel] entrypoint = "bridge.api:app"` so Vercel runs the FastAPI app as one function (same routes as local uvicorn: `/health`, `/api/...`).
 - **[`deploy/vercel/protocol_analyzer_linux_amd64`](deploy/vercel/protocol_analyzer_linux_amd64)** — prebuilt **Linux x86-64** firmware CLI used when the Vercel builder has no `gcc` (see [`deploy/vercel/README.txt`](deploy/vercel/README.txt) to refresh after C changes).
 
 ### Deploy steps
 
-1. Import the GitHub repo in [Vercel](https://vercel.com/new) and deploy with defaults (root directory = repo root, no monorepo subpath).
-2. Optional environment variables in the Vercel project:
+1. Import the GitHub repo in [Vercel](https://vercel.com/new) and deploy with defaults: **Root Directory** = repository root (`.`). Do **not** set the root to `dashboard/` only, or `vercel.json` and the Python app will not apply.
+2. **Install Command must not be overridden in the dashboard.** In **Project → Settings → Build & Development**, clear **Install Command** (leave empty so **`vercel.json`** is used). If the build log still shows `pip install -r requirements.txt && cd dashboard && npm ci`, you are either on an **old commit** (before `b71c279`) or a **saved override** is ignoring the repo.
+3. Redeploy **latest `main`**. The install step should show the `uv pip install --system` / `sh -c '...'` line from `vercel.json`, not plain `pip install -r requirements.txt`.
+4. Optional environment variables in the Vercel project:
    - **`CORS_EXTRA_ORIGINS`** — add your production URL(s), comma-separated (e.g. `https://your-app.vercel.app`). Preview deployments use `https://*.vercel.app`; when **`VERCEL=1`** (set in `vercel.json`), the bridge also allows that pattern via **`allow_origin_regex`**.
    - **`CORS_ORIGIN_REGEX`** — override the preview regex if needed.
-3. After changing firmware C code, rebuild the prebuilt binary on Linux and commit (see `deploy/vercel/README.txt`).
+5. After changing firmware C code, rebuild the prebuilt binary on Linux and commit (see `deploy/vercel/README.txt`).
 
 The dashboard calls **`/api/*` and `/health` on the same origin** (`VITE_API_URL=relative` at build time), so the live UI and bridge stay on one deployment.
+
+**“NOT_FOUND” / “The page could not be found”** on the production URL usually means **no successful Production deployment** (for example the build failed on an old commit). Fix the build on latest `main`, then open the deployment URL again.
 
 ## Further documentation
 
