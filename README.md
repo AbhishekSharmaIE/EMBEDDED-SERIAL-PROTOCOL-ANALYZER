@@ -8,15 +8,15 @@ Deterministic **UART**, **SPI**, and **I2C** frame simulation in **C**, a small 
 
 ### UART — start, data, parity, stop
 
-![UART frame analysis: visualization timeline, byte breakdown 0xA5, MISRA notes](./Screenshot%20from%202026-05-13%2015-30-08.png)
+![UART frame analysis: visualization timeline, byte breakdown 0xA5, MISRA notes](docs/images/readme-uart.png)
 
 ### SPI — clock, MOSI, CS, edge timing
 
-![SPI frame analysis: CLK/MOSI/CS traces, payload 0x3C, mode and frequency controls](./Screenshot%20from%202026-05-13%2015-30-25.png)
+![SPI frame analysis: CLK/MOSI/CS traces, payload 0x3C, mode and frequency controls](docs/images/readme-spi.png)
 
 ### I2C — START, address, R/W, ACK, data, STOP
 
-![I2C transaction: bus visualization, wire address byte breakdown, payload bytes](./Screenshot%20from%202026-05-13%2015-30-43.png)
+![I2C transaction: bus visualization, wire address byte breakdown, payload bytes](docs/images/readme-i2c.png)
 
 ---
 
