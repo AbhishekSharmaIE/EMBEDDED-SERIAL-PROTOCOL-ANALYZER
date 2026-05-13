@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 from pathlib import Path
@@ -33,6 +34,8 @@ BINARY = _path_from_env("PROTOCOL_ANALYZER", _default_binary)
 
 # REST prefix is NOT "/api/..." — on Vercel, "/api/*" is reserved for the file-based `api/*.py` router.
 _PA = "/pa"
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Embedded Serial Protocol Analyzer",
@@ -194,4 +197,7 @@ def _register_spa_static() -> None:
         return FileResponse(index, media_type="text/html")
 
 
-_register_spa_static()
+try:
+    _register_spa_static()
+except Exception:
+    logger.exception("SPA static registration failed; /health and /pa/* are still available")

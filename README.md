@@ -17,7 +17,7 @@ Hiring managers for embedded and automotive software roles look for protocol lit
 
 **Recording a real demo GIF**
 
-1. Start the bridge (`python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000` in `bridge/`) and the dashboard (`npm run dev` in `dashboard/`), or use `docker compose up --build`.
+1. Start the bridge from the **repo root**: `bash scripts/run-local-api.sh` or `python app.py` (after `pip install -r requirements.txt` and `make -C firmware all`). Start the dashboard with `npm run dev` in `dashboard/`, or use `docker compose up --build`.
 2. Use **[LICEcap](https://www.cockos.com/licecap/)** (Windows/macOS) or **[Kap](https://getkap.co/)** (macOS) to capture a ~10–20 s window: show UART/SPI/I2C tabs, submit a frame, and pan the timeline if applicable.
 3. Export as GIF, overwrite `docs/demo.gif`, and commit (keep file size reasonable; trim borders and resolution in the recorder if needed).
 
@@ -32,6 +32,26 @@ Hiring managers for embedded and automotive software roles look for protocol lit
 ```
 
 The C binary is the single source of truth for bit-level framing; the bridge parses one JSON line per invocation; the dashboard visualizes bits, edges, and MISRA-oriented notes.
+
+## Run locally (API + dashboard)
+
+**Always run the API from the repository root** so `from bridge.api import app` resolves.
+
+```bash
+# one-shot
+bash scripts/run-local-api.sh
+
+# or manually
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+make -C firmware all
+python app.py
+# same as: python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+Then, in another terminal: `cd dashboard && npm ci && npm run dev` — Vite proxies `/pa` and `/health` to `http://127.0.0.1:8000`.
+
+**Do not** run `uvicorn bridge.api:app` unless `PYTHONPATH` includes the repo root; prefer **`app:app`** from the root as above. The older **`cd bridge && uvicorn api:app`** layout matches `bridge/Dockerfile` only when that directory is the whole app context.
 
 ## Skills demonstrated
 
