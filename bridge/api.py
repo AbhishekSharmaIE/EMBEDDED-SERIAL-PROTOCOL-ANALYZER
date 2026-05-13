@@ -69,17 +69,32 @@ def _run_firmware(args: list[str]) -> dict[str, Any]:
         )
     except subprocess.TimeoutExpired as exc:
         raise HTTPException(status_code=500, detail="firmware subprocess timed out") from exc
-
-    if proc.returncode != 0:
-        detail = (proc.stderr or proc.stdout or "firmware process failed").strip()
-        raise HTTPException(status_code=500, detail=detail)
-
-    try:
-        return json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
+    except OSError as exc:
         raise HTTPException(
             status_code=500,
-            detail=f"invalid JSON from firmware: {exc}; stdout={proc.stdout!r}",
+            detail=f"could not run firmware binary ({BINARY}): {exc}",
+        ) from exc
+
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "firmware process failed").strip() or f"exit code {proc.returncode}"
+        raise HTTPException(status_code=500, detail=detail)
+
+    raw = (proc.stdout or "").strip()
+    if not raw:
+        err = (proc.stderr or "").strip()
+        raise HTTPException(status_code=500, detail=f"empty stdout from firmware; stderr={err!r}")
+
+    line = raw.splitlines()[0].strip()
+    try:
+        return json.loads(line)
+    except json.JSONDecodeError as exc:
+        err = (proc.stderr or "").strip()
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"invalid JSON from firmware: {exc}; "
+                f"stdout(first 400)={line[:400]!r}; stderr(first 400)={err[:400]!r}"
+            ),
         ) from exc
 
 
