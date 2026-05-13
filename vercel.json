@@ -6,5 +6,11 @@
   "env": {
     "SKIP_FIRMWARE_BUILD": "1",
     "VERCEL": "1"
+  },
+  "functions": {
+    "app.py": {
+      "includeFiles": "{firmware/bin/protocol_analyzer,bridge/_vercel_public/**}",
+      "maxDuration": 30
+    }
   }
 }

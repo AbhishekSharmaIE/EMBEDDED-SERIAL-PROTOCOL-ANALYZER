@@ -63,23 +63,32 @@ def _run_make_all() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not _skip_firmware_build():
-        try:
-            await asyncio.to_thread(_run_make_all)
-        except Exception as exc:
-            # Typical on Vercel without gcc, or when SKIP_FIRMWARE_BUILD was not passed through to runtime.
-            if BINARY.is_file():
-                _log.warning(
-                    "firmware make at startup failed; continuing with existing binary at %s: %s",
-                    BINARY,
-                    exc,
-                )
-            else:
-                raise RuntimeError(
-                    "firmware build failed and protocol_analyzer is missing. "
-                    "On Vercel set SKIP_FIRMWARE_BUILD=1 (see vercel.json env) or enable system env vars; "
-                    "locally run `make -C firmware all`."
-                ) from exc
+    # If the ELF is already present (e.g. built in CI / copied in vercel-build.sh), never run `make` here.
+    # Vercel builders usually have no gcc; `make` would fail and tear down the whole ASGI app (500 FUNCTION_INVOCATION_FAILED).
+    need_make = not _skip_firmware_build() and not BINARY.is_file()
+    if not need_make:
+        yield
+        return
+    try:
+        await asyncio.to_thread(_run_make_all)
+    except Exception as exc:
+        if BINARY.is_file():
+            _log.warning(
+                "firmware make at startup failed; continuing with existing binary at %s: %s",
+                BINARY,
+                exc,
+            )
+        else:
+            raise RuntimeError(
+                "firmware build failed and protocol_analyzer is missing. "
+                "On Vercel set SKIP_FIRMWARE_BUILD=1 (see vercel.json env) or enable system env vars; "
+                "locally run `make -C firmware all`."
+            ) from exc
+    if not BINARY.is_file():
+        raise RuntimeError(
+            "protocol_analyzer is still missing after `make`. "
+            "Ensure firmware/bin/protocol_analyzer is bundled (see vercel.json functions.includeFiles)."
+        )
     yield
 
 
