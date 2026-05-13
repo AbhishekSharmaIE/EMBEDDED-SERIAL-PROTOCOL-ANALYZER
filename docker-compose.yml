@@ -1,0 +1,43 @@
+# One-command stack: firmware build → API → static dashboard
+# Usage: docker compose up --build
+
+services:
+  firmware-builder:
+    image: gcc:12
+    volumes:
+      - ./firmware:/firmware
+      - firmware-bin:/firmware/bin
+    working_dir: /firmware
+    command: >-
+      sh -c "apt-get update &&
+      DEBIAN_FRONTEND=noninteractive apt-get install -y make &&
+      make all"
+
+  bridge:
+    build:
+      context: ./bridge
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - firmware-bin:/fw/bin:ro
+    environment:
+      SKIP_FIRMWARE_BUILD: "1"
+      PROTOCOL_ANALYZER: /fw/bin/protocol_analyzer
+      APP_ROOT: /app
+      FW_DIR: /fw
+    depends_on:
+      firmware-builder:
+        condition: service_completed_successfully
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - bridge
+
+volumes:
+  firmware-bin:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import subprocess
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -13,9 +14,23 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-ROOT = Path(__file__).resolve().parent.parent
-FW_DIR = ROOT / "firmware"
-BINARY = FW_DIR / "bin" / "protocol_analyzer"
+
+def _path_from_env(name: str, default: Path) -> Path:
+    raw = os.environ.get(name)
+    if raw:
+        return Path(raw).expanduser().resolve()
+    return default
+
+
+_here = Path(__file__).resolve()
+_default_root = _here.parent.parent
+ROOT = _path_from_env("APP_ROOT", _default_root)
+FW_DIR = _path_from_env("FW_DIR", ROOT / "firmware")
+BINARY = _path_from_env("PROTOCOL_ANALYZER", FW_DIR / "bin" / "protocol_analyzer")
+
+
+def _skip_firmware_build() -> bool:
+    return os.environ.get("SKIP_FIRMWARE_BUILD", "").lower() in ("1", "true", "yes")
 
 
 def _run_make_all() -> None:
@@ -32,7 +47,8 @@ def _run_make_all() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await asyncio.to_thread(_run_make_all)
+    if not _skip_firmware_build():
+        await asyncio.to_thread(_run_make_all)
     yield
 
 
