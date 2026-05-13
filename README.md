@@ -98,21 +98,20 @@ Open the URL shown in the terminal (typically `http://localhost:5173`). With `np
 
 ## GitHub Pages (hosted dashboard)
 
-The workflow [.github/workflows/pages.yml](.github/workflows/pages.yml) builds the dashboard with the correct [Vite `base`](https://vite.dev/config/shared-options.html#base) for a **project site** and deploys the `dist/` folder to GitHub Pages on every push to `main`.
+The workflow [.github/workflows/pages.yml](.github/workflows/pages.yml) builds the dashboard with the correct [Vite `base`](https://vite.dev/config/shared-options.html#base) for a **project site**, then pushes `dashboard/dist` to the **`gh-pages`** branch. GitHub Pages serves that branch as the site (no “GitHub Actions” Pages source required).
 
-### One-time setup (do this before expecting a green deploy)
+### One-time setup
 
-1. In the GitHub repo: **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions** (not “Deploy from a branch”).  
-   If Pages is still set to publish from a branch, the **deploy** job fails with **“Failed to create deployment (status: 404)”** because the Actions-based Pages API is not enabled.
-2. Re-run the **Pages** workflow (**Actions → Pages → Re-run all jobs**) after saving the setting.
+1. **Settings → Actions → General → Workflow permissions** → choose **Read and write permissions** and save.  
+   If workflows are read-only, the push to `gh-pages` fails because `GITHUB_TOKEN` cannot write branches.
+2. **Settings → Pages → Build and deployment** → **Source: Deploy from a branch** → Branch **`gh-pages`**, folder **`/` (root)** → Save.  
+   The first workflow run creates `gh-pages`; if Pages still shows “None”, run **Actions → Pages → Re-run all jobs** after the branch exists.
 
-Then open:
+Site URL:
 
 `https://<your-username>.github.io/<repository-name>/`
 
 (for this repo, typically `https://abhisheksharmaie.github.io/EMBEDDED-SERIAL-PROTOCOL-ANALYZER/` — GitHub may normalize hostname casing).
-
-If the workflow waits on **deployment approval**, use **Settings → Environments → github-pages** and approve, or adjust protection rules.
 
 **API from the hosted UI:** GitHub Pages only serves static files. The bridge still runs on your machine, Docker, or another host. To point the Pages build at a **public HTTPS** API:
 

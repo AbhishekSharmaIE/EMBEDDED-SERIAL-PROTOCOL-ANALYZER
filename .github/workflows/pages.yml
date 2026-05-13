@@ -1,7 +1,10 @@
-# Build the Vite dashboard and publish to GitHub Pages (project site).
+# Build the Vite dashboard and push to the gh-pages branch (GitHub project Pages).
 #
-# REQUIRED (once per repo): Settings → Pages → Build and deployment → Source: "GitHub Actions".
-# If Source is still "Deploy from a branch", deploy-pages returns 404 when creating the deployment.
+# One-time setup:
+#   1) Settings → Actions → General → Workflow permissions → enable "Read and write permissions"
+#      (default "Read repository contents" cannot push to gh-pages).
+#   2) Settings → Pages → Build and deployment → Source: "Deploy from a branch"
+#      Branch: gh-pages, folder: / (root). Save, then re-run this workflow if the branch did not exist yet.
 
 name: Pages
 
@@ -11,25 +14,25 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
-      - name: Install and build dashboard
+
+      - name: Build dashboard
         working-directory: dashboard
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
@@ -39,20 +42,10 @@ jobs:
           npm run build
           touch dist/.nojekyll
           cp dist/index.html dist/404.html
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dashboard/dist
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    # Required by actions/deploy-pages (OIDC + Pages API); workflow-level permissions are not enough for some runs.
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Push to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dashboard/dist
+          force_orphan: true
