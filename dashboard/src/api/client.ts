@@ -76,12 +76,14 @@ export interface I2cFrameResponse {
 export type AnalyzeResult = UartFrameResponse | SpiFrameResponse | I2cFrameResponse;
 
 async function parseError(res: Response): Promise<string> {
+  const text = await res.text();
   try {
-    const j = (await res.json()) as { detail?: unknown };
+    const j = JSON.parse(text) as { detail?: unknown };
     if (typeof j.detail === "string") return j.detail;
-    return JSON.stringify(j.detail ?? j);
+    if (j.detail != null) return JSON.stringify(j.detail);
+    return text.length > 0 ? text : res.statusText;
   } catch {
-    return await res.text();
+    return text.length > 0 ? text : res.statusText;
   }
 }
 
