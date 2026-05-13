@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Vercel build: firmware binary + dashboard -> bridge/_vercel_public (bundled into the Python serverless app).
-# Do NOT use root outputDirectory "public" on Vercel: that deploys static-only and /health and /pa/* get edge NOT_FOUND.
+# Also copies dist -> ./public when the Vercel project has "Output Directory" = public (otherwise the build errors).
+# Do NOT add "outputDirectory": "public" to vercel.json — that makes a static-only deploy; /health and /pa/* get NOT_FOUND.
 # FastAPI serves /, /assets, /pa/*, /health from _vercel_public (see bridge/api.py).
 # If the builder has no gcc, copies deploy/vercel/protocol_analyzer_linux_amd64 (refresh after C changes).
 set -euo pipefail
@@ -31,4 +32,8 @@ VITE_API_URL=relative npm run build
 rm -rf "${ROOT}/bridge/_vercel_public"
 cp -r dist "${ROOT}/bridge/_vercel_public"
 
-echo "Vercel build OK: dashboard -> bridge/_vercel_public/, firmware -> firmware/bin/protocol_analyzer"
+rm -rf "${ROOT}/public"
+mkdir -p "${ROOT}/public"
+cp -r dist/. "${ROOT}/public/"
+
+echo "Vercel build OK: dashboard -> bridge/_vercel_public/ + public/, firmware -> firmware/bin/protocol_analyzer"
