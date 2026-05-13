@@ -25,6 +25,11 @@
 #define UART_STOP_VALUE    (1U)
 #define UART_DATA_BITS     (8U)
 
+/**
+ * @brief Count bits set to 1 in an 8-bit value.
+ * @param[in] value Byte to inspect.
+ * @return Number of set bits (0..8).
+ */
 static uint8_t count_one_bits_u8(uint8_t value)
 {
     uint8_t count = 0U;
@@ -39,6 +44,11 @@ static uint8_t count_one_bits_u8(uint8_t value)
     return count;
 }
 
+/**
+ * @brief Even-parity bit for eight data bits.
+ * @param[in] data Payload byte.
+ * @return Parity bit value 0 or 1.
+ */
 static uint8_t parity_bit_even(uint8_t data)
 {
     uint8_t ones;
@@ -49,6 +59,11 @@ static uint8_t parity_bit_even(uint8_t data)
     return p;
 }
 
+/**
+ * @brief Odd-parity bit for eight data bits.
+ * @param[in] data Payload byte.
+ * @return Parity bit value 0 or 1.
+ */
 static uint8_t parity_bit_odd(uint8_t data)
 {
     uint8_t ones;
@@ -59,6 +74,12 @@ static uint8_t parity_bit_odd(uint8_t data)
     return p;
 }
 
+/**
+ * @brief Build a UART frame bit sequence (start, LSB-first data, optional parity, stop(s)).
+ * @param[in] data Payload byte (0..255).
+ * @param[in] config Parity mode and stop-bit count.
+ * @return Frame structure with @c bits[] and @c bit_count populated.
+ */
 uart_frame_t uart_build_frame(uint8_t data, uart_config_t config)
 {
     uart_frame_t frame;
@@ -107,6 +128,11 @@ uart_frame_t uart_build_frame(uint8_t data, uart_config_t config)
     return frame;
 }
 
+/**
+ * @brief Validate a previously built UART frame.
+ * @param[in] frame Frame to check (must match @c frame.config used at build time).
+ * @return @ref UART_OK if valid; otherwise a @c UART_ERR_* code.
+ */
 int uart_validate_frame(uart_frame_t frame)
 {
     int result = UART_OK;
@@ -176,6 +202,10 @@ int uart_validate_frame(uart_frame_t frame)
     return result;
 }
 
+/**
+ * @brief Print frame contents to stdout (DEBUG builds only).
+ * @param[in] frame Frame to dump.
+ */
 void uart_print_frame(uart_frame_t frame)
 {
 #ifdef DEBUG

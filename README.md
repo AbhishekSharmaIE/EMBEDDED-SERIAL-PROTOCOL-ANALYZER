@@ -2,23 +2,54 @@
 
 # Embedded Serial Protocol Analyzer
 
-MISRA-aware UART/SPI/I2C simulator with React visualization dashboard.
+MISRA-aware UART, SPI, and I2C frame simulation in C, a FastAPI bridge, and a React dashboard with an oscilloscope-style timeline.
 
-## Overview
+## Why this project
 
-This project provides a cross-platform stack for simulating serial protocols in embedded-style C, exposing results through a Python API, and visualizing frames in a React dashboard. Documentation will map design choices to automotive software quality practices (MISRA C awareness, ASPICE-oriented traceability).
+Hiring managers for embedded and automotive software roles look for protocol literacy, disciplined C, traceability to standards, and the ability to ship a full vertical slice—not only a snippet on a dev board. This repository is a compact demo of that stack: deterministic protocol math in firmware-style C, JSON output for tooling, a small REST API, and a polished UI with a short boot splash and an in-app **About** modal (MISRA, ASPICE, protocol one-liners).
 
-## Tech Stack
+## Screenshots
+
+| Asset | Notes |
+| --- | --- |
+| [docs/demo.gif](docs/demo.gif) | **Placeholder** (1×1 transparent GIF). Replace with a screen capture after you run the stack. |
+
+**Recording a real demo GIF**
+
+1. Start the bridge (`python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000` in `bridge/`) and the dashboard (`npm run dev` in `dashboard/`), or use `docker compose up --build`.
+2. Use **[LICEcap](https://www.cockos.com/licecap/)** (Windows/macOS) or **[Kap](https://getkap.co/)** (macOS) to capture a ~10–20 s window: show UART/SPI/I2C tabs, submit a frame, and pan the timeline if applicable.
+3. Export as GIF, overwrite `docs/demo.gif`, and commit (keep file size reasonable; trim borders and resolution in the recorder if needed).
+
+## Architecture
+
+```
+┌─────────────────┐     JSON (stdout)      ┌──────────────────┐     REST JSON     ┌────────────────────┐
+│  firmware/ (C)  │ ─────────────────────► │  bridge/ (Python)│ ────────────────► │ dashboard/ (React)│
+│  uart / spi /   │   subprocess per       │  FastAPI +        │   /api/* +        │  Vite, Recharts,    │
+│  i2c simulators │   request              │  uvicorn          │   /health       │  Tailwind UI        │
+└─────────────────┘                        └──────────────────┘                   └────────────────────┘
+```
+
+The C binary is the single source of truth for bit-level framing; the bridge parses one JSON line per invocation; the dashboard visualizes bits, edges, and MISRA-oriented notes.
+
+## Skills demonstrated
+
+- **Embedded C**: UART/SPI/I2C framing, explicit types, MISRA-oriented style; Doxygen-style comments on public and static helpers.
+- **Integration**: Subprocess bridge, error handling, Docker Compose for reproducible runs.
+- **Web**: TypeScript, React, API client with safe error-body handling, Vite dev proxy to the API.
+- **Quality**: Unit tests for the firmware logic, GitHub Actions CI, ASPICE/MISRA documentation under `docs/`.
+
+## Tech stack
 
 | Layer | Technology |
 | --- | --- |
 | Protocol engine | C99, GCC, Make |
 | Bridge API | Python 3, FastAPI, Uvicorn |
-| Dashboard | React, TypeScript, Vite |
+| Dashboard | React, TypeScript, Vite, Tailwind CSS |
 | CI | GitHub Actions |
-| Containers | Docker Compose (firmware build + API + static UI) |
+| Containers | Docker Compose (build + API + static UI) |
 
-## How to Run
+## How to run
 
 ### With Docker (one command)
 
@@ -64,13 +95,7 @@ npm run dev
 
 Open the URL shown in the terminal (typically `http://localhost:5173`). With `npm run dev`, `/api` and `/health` are proxied to `http://127.0.0.1:8000`, so start the bridge there (or set `VITE_API_URL` at build time for other setups).
 
-## Architecture
+## Further documentation
 
-```
-firmware/ (C)  →  bridge/ (FastAPI)  →  dashboard/ (React + Vite)
-     │                    │                      │
-  simulate /         REST JSON              visualization
-  decode frames      + subprocess C           + UX
-```
-
-The C layer produces protocol data; the bridge wraps it for the web UI; the dashboard consumes the API and renders timelines and breakdowns.
+- [docs/README.md](docs/README.md) — index of MISRA and ASPICE notes.
+- [EMBEDDED_PROTOCOL_ANALYZER.md](EMBEDDED_PROTOCOL_ANALYZER.md) — deeper design narrative (if present in your checkout).

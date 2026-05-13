@@ -20,6 +20,11 @@
 #include <stdio.h>
 #endif
 
+/**
+ * @brief Check whether an SPI mode constant is one of the four CPOL/CPHA combinations.
+ * @param[in] mode Mode value to validate.
+ * @return 1 if valid, 0 otherwise.
+ */
 static uint8_t mode_is_valid(spi_mode_t mode)
 {
     uint8_t ok;
@@ -33,6 +38,12 @@ static uint8_t mode_is_valid(spi_mode_t mode)
     return ok;
 }
 
+/**
+ * @brief Populate MOSI bit array for one byte according to bit order.
+ * @param[in,out] frame Frame to fill; no-op if @c frame is NULL.
+ * @param[in] data Payload byte.
+ * @param[in] order MSB-first or LSB-first on wire.
+ */
 static void fill_mosi_bits(spi_frame_t *frame, uint8_t data, spi_bit_order_t order)
 {
     uint8_t t;
@@ -54,6 +65,12 @@ static void fill_mosi_bits(spi_frame_t *frame, uint8_t data, spi_bit_order_t ord
     }
 }
 
+/**
+ * @brief Build an SPI frame structure (mode, CS polarity, bit order, MOSI bits).
+ * @param[in] data Payload byte.
+ * @param[in] config Device configuration; invalid mode falls back to mode 0.
+ * @return Initialized @ref spi_frame_t (clock edges zero until simulated).
+ */
 spi_frame_t spi_build_frame(uint8_t data, spi_config_t config)
 {
     spi_frame_t frame;
@@ -78,6 +95,11 @@ spi_frame_t spi_build_frame(uint8_t data, spi_config_t config)
     return frame;
 }
 
+/**
+ * @brief Compute per-edge timestamps (nanoseconds) for half-period SPI clock timing.
+ * @param[in,out] frame Frame to update; no-op if @c frame is NULL. @c freq_hz==0 uses minimal spacing.
+ * @param[in] freq_hz Clock frequency in Hz.
+ */
 void spi_simulate_clock_edges(spi_frame_t *frame, uint32_t freq_hz)
 {
     uint8_t i;
@@ -108,6 +130,11 @@ void spi_simulate_clock_edges(spi_frame_t *frame, uint32_t freq_hz)
 }
 
 #ifdef DEBUG
+/**
+ * @brief CPOL (clock idle level) derived from SPI mode (DEBUG helper).
+ * @param[in] mode SPI mode 0..3.
+ * @return 1 if idle high (modes 2–3), else 0.
+ */
 static uint8_t cpol_from_mode(spi_mode_t mode)
 {
     uint8_t cpol;
@@ -121,6 +148,11 @@ static uint8_t cpol_from_mode(spi_mode_t mode)
     return cpol;
 }
 
+/**
+ * @brief CPHA (sample on first or second edge) derived from SPI mode (DEBUG helper).
+ * @param[in] mode SPI mode 0..3.
+ * @return 1 if CPHA=1 (modes 1 and 3), else 0.
+ */
 static uint8_t cpha_from_mode(spi_mode_t mode)
 {
     uint8_t cpha;
@@ -135,6 +167,10 @@ static uint8_t cpha_from_mode(spi_mode_t mode)
 }
 #endif
 
+/**
+ * @brief Print SPI frame and edge timing to stdout (DEBUG builds only).
+ * @param[in] frame Frame to dump.
+ */
 void spi_print_frame(spi_frame_t frame)
 {
 #ifdef DEBUG

@@ -20,6 +20,11 @@
 #include <stdio.h>
 #endif
 
+/**
+ * @brief Validate a 7-bit I2C slave address (reserved ranges rejected).
+ * @param[in] addr 7-bit address (0..127).
+ * @return @ref I2C_OK or @ref I2C_ERR_ADDR.
+ */
 int i2c_validate_address(uint8_t addr)
 {
     int result;
@@ -35,6 +40,14 @@ int i2c_validate_address(uint8_t addr)
     return result;
 }
 
+/**
+ * @brief Build an I2C transaction frame (address, R/W, optional payload, ACK model).
+ * @param[in] addr 7-bit slave address.
+ * @param[in] rw Read (1) or write (0) direction bit.
+ * @param[in] data Payload bytes; may be NULL when @c len is 0.
+ * @param[in] len Number of payload bytes (max @ref I2C_MAX_DATA_BYTES).
+ * @return Frame with @c error_code set on validation failure.
+ */
 i2c_frame_t i2c_build_frame(uint8_t addr, uint8_t rw, uint8_t *data, uint8_t len)
 {
     i2c_frame_t frame;
@@ -69,6 +82,10 @@ i2c_frame_t i2c_build_frame(uint8_t addr, uint8_t rw, uint8_t *data, uint8_t len
     return frame;
 }
 
+/**
+ * @brief Print I2C frame fields to stdout (DEBUG builds only).
+ * @param[in] frame Frame to dump.
+ */
 void i2c_print_frame(i2c_frame_t frame)
 {
 #ifdef DEBUG

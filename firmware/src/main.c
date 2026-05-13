@@ -17,6 +17,12 @@
 #include "spi_sim.h"
 #include "uart_sim.h"
 
+/**
+ * @brief Parse UART parity string from CLI.
+ * @param[in] s Token: @c none, @c even, or @c odd.
+ * @param[out] out Parsed parity enum on success.
+ * @return 0 on success, non-zero if @c s is invalid.
+ */
 static int parse_uart_parity(const char *s, uart_parity_t *out)
 {
     int err = 1;
@@ -37,6 +43,12 @@ static int parse_uart_parity(const char *s, uart_parity_t *out)
     return err;
 }
 
+/**
+ * @brief Parse UART stop-bit count from CLI.
+ * @param[in] s Token @c 1 or @c 2.
+ * @param[out] out Parsed stop-bit mode on success.
+ * @return 0 on success, non-zero if invalid.
+ */
 static int parse_uart_stops(const char *s, uart_stop_t *out)
 {
     int err = 1;
@@ -54,6 +66,11 @@ static int parse_uart_stops(const char *s, uart_stop_t *out)
     return err;
 }
 
+/**
+ * @brief Emit one JSON object describing a UART frame (for the Python bridge).
+ * @param[in] f Built frame.
+ * @param[in] valid Non-zero if @ref uart_validate_frame returned @ref UART_OK.
+ */
 static void emit_uart_json(const uart_frame_t *f, int valid)
 {
     uint8_t i;
@@ -81,6 +98,12 @@ static void emit_uart_json(const uart_frame_t *f, int valid)
     (void)printf("}\n");
 }
 
+/**
+ * @brief Handle @c uart CLI subcommand: parse args, build frame, print JSON.
+ * @param[in] argc Argument count.
+ * @param[in] argv Argument vector (@c argv[1] is @c uart).
+ * @return 0 on success, non-zero on usage or parse error.
+ */
 static int cmd_uart(int argc, char **argv)
 {
     unsigned long data_ul;
@@ -107,6 +130,12 @@ static int cmd_uart(int argc, char **argv)
     return err;
 }
 
+/**
+ * @brief Parse SPI bit order string from CLI.
+ * @param[in] s Token @c msb or @c lsb.
+ * @param[out] out Parsed bit order on success.
+ * @return 0 on success, non-zero if invalid.
+ */
 static int parse_spi_order(const char *s, spi_bit_order_t *out)
 {
     int err = 1;
@@ -124,6 +153,10 @@ static int parse_spi_order(const char *s, spi_bit_order_t *out)
     return err;
 }
 
+/**
+ * @brief Emit one JSON object describing an SPI frame (for the Python bridge).
+ * @param[in] f Frame with MOSI bits and simulated clock edges.
+ */
 static void emit_spi_json(spi_frame_t *f)
 {
     uint8_t i;
@@ -151,6 +184,12 @@ static void emit_spi_json(spi_frame_t *f)
     (void)printf("]}\n");
 }
 
+/**
+ * @brief Handle @c spi CLI subcommand: parse args, build frame, simulate edges, print JSON.
+ * @param[in] argc Argument count.
+ * @param[in] argv Argument vector.
+ * @return 0 on success, non-zero on usage or parse error.
+ */
 static int cmd_spi(int argc, char **argv)
 {
     unsigned long data_ul;
@@ -180,6 +219,13 @@ static int cmd_spi(int argc, char **argv)
     return err;
 }
 
+/**
+ * @brief Parse comma-separated hex byte list for I2C payload.
+ * @param[in] csv Comma-separated values (may be NULL or empty for zero length).
+ * @param[out] buf Output buffer (at least @ref I2C_MAX_DATA_BYTES when non-empty).
+ * @param[out] out_len Number of bytes stored in @c buf.
+ * @return 0 on success, non-zero on parse error or overflow.
+ */
 static int parse_i2c_csv(const char *csv, uint8_t *buf, uint8_t *out_len)
 {
     const char *p;
@@ -226,6 +272,10 @@ static int parse_i2c_csv(const char *csv, uint8_t *buf, uint8_t *out_len)
     return err;
 }
 
+/**
+ * @brief Emit one JSON object describing an I2C frame (for the Python bridge).
+ * @param[in] f Built frame including error code from validation.
+ */
 static void emit_i2c_json(const i2c_frame_t *f)
 {
     uint8_t i;
@@ -246,6 +296,12 @@ static void emit_i2c_json(const i2c_frame_t *f)
     (void)printf("],\"error_code\":%d}\n", f->error_code);
 }
 
+/**
+ * @brief Handle @c i2c CLI subcommand: parse address, direction, optional data CSV, print JSON.
+ * @param[in] argc Argument count.
+ * @param[in] argv Argument vector.
+ * @return 0 on success, non-zero on usage or parse error.
+ */
 static int cmd_i2c(int argc, char **argv)
 {
     unsigned long addr_ul;
@@ -290,6 +346,12 @@ static int cmd_i2c(int argc, char **argv)
     return err;
 }
 
+/**
+ * @brief Program entry: dispatch @c uart, @c spi, or @c i2c subcommand.
+ * @param[in] argc Standard C argc.
+ * @param[in] argv Standard C argv.
+ * @return 0 on successful handling, non-zero if unknown command or subcommand failure.
+ */
 int main(int argc, char **argv)
 {
     int err = 1;

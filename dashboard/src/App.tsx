@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { Info } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   postI2cFrame,
@@ -6,6 +7,8 @@ import {
   postUartFrame,
   type AnalyzeResult,
 } from "./api/client";
+import { AboutModal } from "./components/AboutModal";
+import { BootScreen } from "./components/BootScreen";
 import { ByteBreakdown } from "./components/ByteBreakdown";
 import { FrameTimeline } from "./components/FrameTimeline";
 import { MisraPanel } from "./components/MisraPanel";
@@ -22,11 +25,18 @@ function Skeleton() {
 }
 
 export default function App() {
+  const [booting, setBooting] = useState(true);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [tab, setTab] = useState<ProtocolTab>("uart");
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [animKey, setAnimKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setBooting(false), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const onAnalyze = useCallback(async (payload: AnalyzePayload) => {
     setLoading(true);
@@ -50,8 +60,14 @@ export default function App() {
     }
   }, []);
 
+  if (booting) {
+    return <BootScreen />;
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-panel md:flex-row">
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+
       <aside className="w-full border-b border-white/10 bg-black/40 md:w-72 md:border-b-0 md:border-r md:border-white/10">
         <ProtocolSelector
           active={tab}
@@ -76,6 +92,15 @@ export default function App() {
               Oscilloscope-style visualization for UART, SPI, and I2C frames simulated in MISRA-aware firmware.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setAboutOpen(true)}
+            className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-200 transition hover:border-accent2/50 hover:text-white"
+            aria-label="About this project"
+          >
+            <Info className="h-4 w-4 text-accent2" />
+            About
+          </button>
         </header>
 
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-8">

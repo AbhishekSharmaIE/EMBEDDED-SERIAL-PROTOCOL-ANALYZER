@@ -25,11 +25,16 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        sweepline: {
+          "0%": { transform: "translateX(-120%)" },
+          "100%": { transform: "translateX(420%)" },
+        },
       },
       animation: {
         blink: "blink 1s step-end infinite",
         draw: "draw 0.8s ease-out forwards",
         shimmer: "shimmer 1.4s ease-in-out infinite",
+        sweepline: "sweepline 1.4s ease-in-out infinite",
       },
     },
   },
