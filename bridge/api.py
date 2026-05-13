@@ -32,8 +32,10 @@ _bundled_cli = _here / "protocol_analyzer"
 _default_binary = _bundled_cli if _bundled_cli.is_file() else (FW_DIR / "bin" / "protocol_analyzer")
 BINARY = _path_from_env("PROTOCOL_ANALYZER", _default_binary)
 
-# REST prefix is NOT "/api/..." — on Vercel, "/api/*" is reserved for the file-based `api/*.py` router.
+# Primary REST prefix for Vercel and docs: `/pa/*` (avoids collision with Vercel's file-based `/api/*.py` layout).
+# `/api/*` aliases are registered on the same FastAPI app for local tools and older clients.
 _PA = "/pa"
+_API = "/api"
 
 logger = logging.getLogger(__name__)
 
@@ -120,8 +122,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get(f"{_PA}/protocols")
-def list_protocols() -> list[dict[str, str]]:
+def _protocols() -> list[dict[str, str]]:
     return [
         {
             "id": "uart",
@@ -141,20 +142,47 @@ def list_protocols() -> list[dict[str, str]]:
     ]
 
 
+@app.get(f"{_PA}/protocols")
+def list_protocols() -> list[dict[str, str]]:
+    return _protocols()
+
+
+@app.get(f"{_API}/protocols")
+def list_protocols_api_alias() -> list[dict[str, str]]:
+    return _protocols()
+
+
+def _uart_analyze(body: UartFrameRequest) -> dict[str, Any]:
+    args = ["uart", str(body.data), body.parity, str(body.stop_bits)]
+    return _run_firmware(args)
+
+
 @app.post(f"{_PA}/uart/frame")
 def uart_frame(body: UartFrameRequest) -> dict[str, Any]:
-    args = ["uart", str(body.data), body.parity, str(body.stop_bits)]
+    return _uart_analyze(body)
+
+
+@app.post(f"{_API}/uart/frame")
+def uart_frame_api_alias(body: UartFrameRequest) -> dict[str, Any]:
+    return _uart_analyze(body)
+
+
+def _spi_analyze(body: SpiFrameRequest) -> dict[str, Any]:
+    args = ["spi", str(body.data), str(body.mode), body.bit_order, str(body.freq_hz)]
     return _run_firmware(args)
 
 
 @app.post(f"{_PA}/spi/frame")
 def spi_frame(body: SpiFrameRequest) -> dict[str, Any]:
-    args = ["spi", str(body.data), str(body.mode), body.bit_order, str(body.freq_hz)]
-    return _run_firmware(args)
+    return _spi_analyze(body)
 
 
-@app.post(f"{_PA}/i2c/frame")
-def i2c_frame(body: I2cFrameRequest) -> dict[str, Any]:
+@app.post(f"{_API}/spi/frame")
+def spi_frame_api_alias(body: SpiFrameRequest) -> dict[str, Any]:
+    return _spi_analyze(body)
+
+
+def _i2c_analyze(body: I2cFrameRequest) -> dict[str, Any]:
     if len(body.data) > 32:
         raise HTTPException(status_code=400, detail="at most 32 data bytes")
 
@@ -167,6 +195,16 @@ def i2c_frame(body: I2cFrameRequest) -> dict[str, Any]:
         args.append(",".join(str(int(x)) for x in body.data))
 
     return _run_firmware(args)
+
+
+@app.post(f"{_PA}/i2c/frame")
+def i2c_frame(body: I2cFrameRequest) -> dict[str, Any]:
+    return _i2c_analyze(body)
+
+
+@app.post(f"{_API}/i2c/frame")
+def i2c_frame_api_alias(body: I2cFrameRequest) -> dict[str, Any]:
+    return _i2c_analyze(body)
 
 
 def _register_spa_static() -> None:
