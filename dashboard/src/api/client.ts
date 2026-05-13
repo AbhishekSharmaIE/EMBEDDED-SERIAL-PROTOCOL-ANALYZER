@@ -98,8 +98,8 @@ async function parseError(res: Response): Promise<string> {
   } catch {
     if (res.status === 404 && text.includes("NOT_FOUND")) {
       return (
-        "API returned 404 (edge NOT_FOUND). On Vercel: confirm Root Directory is the repo root, clear a custom Install Command override, " +
-        "and that the Python + FastAPI deployment (pyproject tool.vercel entrypoint) is active—then redeploy latest main."
+        "API returned 404 (edge NOT_FOUND). On Vercel, paths under `/api/*` are reserved for the file-based `api/` serverless router; this app uses `/pa/*` instead. " +
+        "Confirm Root Directory is the repo root, clear Install Command override, redeploy latest main."
       );
     }
     return text.length > 0 ? text : res.statusText;
@@ -107,7 +107,7 @@ async function parseError(res: Response): Promise<string> {
 }
 
 export async function postUartFrame(body: UartFrameRequest): Promise<UartFrameResponse> {
-  const res = await apiFetch("/api/uart/frame", {
+  const res = await apiFetch("/pa/uart/frame", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -117,7 +117,7 @@ export async function postUartFrame(body: UartFrameRequest): Promise<UartFrameRe
 }
 
 export async function postSpiFrame(body: SpiFrameRequest): Promise<SpiFrameResponse> {
-  const res = await apiFetch("/api/spi/frame", {
+  const res = await apiFetch("/pa/spi/frame", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -127,7 +127,7 @@ export async function postSpiFrame(body: SpiFrameRequest): Promise<SpiFrameRespo
 }
 
 export async function postI2cFrame(body: I2cFrameRequest): Promise<I2cFrameResponse> {
-  const res = await apiFetch("/api/i2c/frame", {
+  const res = await apiFetch("/pa/i2c/frame", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -137,7 +137,7 @@ export async function postI2cFrame(body: I2cFrameRequest): Promise<I2cFrameRespo
 }
 
 export async function getProtocols(): Promise<{ id: string; name: string; description: string }[]> {
-  const res = await apiFetch("/api/protocols");
+  const res = await apiFetch("/pa/protocols");
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
 }

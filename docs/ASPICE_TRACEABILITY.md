@@ -30,7 +30,7 @@ This document maps **selected artifacts** in this repository to **ASPICE SWE** p
 
 2. **CI automation** — GitHub Actions workflow builds firmware, runs tests, smoke-imports the Python bridge, builds the dashboard, and (in the bridge job) can hit `/health` when the API is started. This provides a **repeatable** verification baseline.
 
-3. **Bridge contract** — The C CLI emits **single-line JSON** per invocation; the FastAPI layer parses stdout and maps errors to HTTP responses. Manual or automated checks against `/api/*/frame` validate end-to-end behaviour.
+3. **Bridge contract** — The C CLI emits **single-line JSON** per invocation; the FastAPI layer parses stdout and maps errors to HTTP responses. Manual or automated checks against `/pa/*/frame` validate end-to-end behaviour.
 
 4. **Code review checklist (suggested)**  
    - Confirm bounds on all array writes and payload lengths.  

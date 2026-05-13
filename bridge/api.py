@@ -30,6 +30,10 @@ ROOT = _path_from_env("APP_ROOT", _default_root)
 FW_DIR = _path_from_env("FW_DIR", ROOT / "firmware")
 BINARY = _path_from_env("PROTOCOL_ANALYZER", FW_DIR / "bin" / "protocol_analyzer")
 
+# REST prefix is NOT "/api/..." — on Vercel, "/api/*" is reserved for the file-based /api/*.py
+# serverless router; a monolithic FastAPI app in bridge/ never receives those paths (edge NOT_FOUND).
+_PA = "/pa"
+
 
 def _skip_firmware_build() -> bool:
     return os.environ.get("SKIP_FIRMWARE_BUILD", "").lower() in ("1", "true", "yes")
@@ -162,7 +166,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/api/protocols")
+@app.get(f"{_PA}/protocols")
 def list_protocols() -> list[dict[str, str]]:
     return [
         {
@@ -183,19 +187,19 @@ def list_protocols() -> list[dict[str, str]]:
     ]
 
 
-@app.post("/api/uart/frame")
+@app.post(f"{_PA}/uart/frame")
 def uart_frame(body: UartFrameRequest) -> dict[str, Any]:
     args = ["uart", str(body.data), body.parity, str(body.stop_bits)]
     return _run_firmware(args)
 
 
-@app.post("/api/spi/frame")
+@app.post(f"{_PA}/spi/frame")
 def spi_frame(body: SpiFrameRequest) -> dict[str, Any]:
     args = ["spi", str(body.data), str(body.mode), body.bit_order, str(body.freq_hz)]
     return _run_firmware(args)
 
 
-@app.post("/api/i2c/frame")
+@app.post(f"{_PA}/i2c/frame")
 def i2c_frame(body: I2cFrameRequest) -> dict[str, Any]:
     if len(body.data) > 32:
         raise HTTPException(status_code=400, detail="at most 32 data bytes")

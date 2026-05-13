@@ -26,7 +26,7 @@ Hiring managers for embedded and automotive software roles look for protocol lit
 ```
 ┌─────────────────┐     JSON (stdout)      ┌──────────────────┐     REST JSON     ┌────────────────────┐
 │  firmware/ (C)  │ ─────────────────────► │  bridge/ (Python)│ ────────────────► │ dashboard/ (React)│
-│  uart / spi /   │   subprocess per       │  FastAPI +        │   /api/* +        │  Vite, Recharts,    │
+│  uart / spi /   │   subprocess per       │  FastAPI +        │   /pa/* +         │  Vite, Recharts,    │
 │  i2c simulators │   request              │  uvicorn          │   /health       │  Tailwind UI        │
 └─────────────────┘                        └──────────────────┘                   └────────────────────┘
 ```
@@ -94,7 +94,7 @@ npm install
 npm run dev
 ```
 
-Open the URL shown in the terminal (typically `http://localhost:5173`). With `npm run dev`, `/api` and `/health` are proxied to `http://127.0.0.1:8000`, so start the bridge there (or set `VITE_API_URL` at build time for other setups).
+Open the URL shown in the terminal (typically `http://localhost:5173`). With `npm run dev`, `/pa` and `/health` are proxied to `http://127.0.0.1:8000`, so start the bridge there (or set `VITE_API_URL` at build time for other setups).
 
 ## GitHub Pages (hosted dashboard)
 
@@ -127,7 +127,7 @@ Without `PUBLIC_BRIDGE_URL`, production builds keep calling `http://localhost:80
 The repo is configured for a **single Vercel project** at the repository root:
 
 - **[`vercel.json`](vercel.json)** — `installCommand` is a **POSIX `sh -c` one-liner** (`uv pip install --system` or `pip install --break-system-packages`), then **`npm ci`** in `dashboard/`. **`buildCommand`** runs [`scripts/vercel-build.sh`](scripts/vercel-build.sh) (firmware ELF + dashboard build with `VITE_API_URL=relative`). The UI is written to **`public/`** (required **`outputDirectory`** for this project) and duplicated under **`bridge/_vercel_public/`** so FastAPI can serve **`/`** and **`/assets`** from the Python bundle. [`scripts/vercel-install.sh`](scripts/vercel-install.sh) mirrors install logic for local checks.
-- **[`pyproject.toml`](pyproject.toml)** — `[tool.vercel] entrypoint = "bridge.api:app"` so Vercel runs the FastAPI app as one function (same routes as local uvicorn: `/health`, `/api/...`).
+- **[`pyproject.toml`](pyproject.toml)** — `[tool.vercel] entrypoint = "bridge.api:app"` so Vercel runs the FastAPI app as one function (same routes as local uvicorn: `/health`, `/pa/...`).
 - **[`deploy/vercel/protocol_analyzer_linux_amd64`](deploy/vercel/protocol_analyzer_linux_amd64)** — prebuilt **Linux x86-64** firmware CLI used when the Vercel builder has no `gcc` (see [`deploy/vercel/README.txt`](deploy/vercel/README.txt) to refresh after C changes).
 
 ### Deploy steps
@@ -141,9 +141,9 @@ The repo is configured for a **single Vercel project** at the repository root:
    - **`CORS_ORIGIN_REGEX`** — override the preview regex if needed.
 6. After changing firmware C code, rebuild the prebuilt binary on Linux and commit (see `deploy/vercel/README.txt`).
 
-The dashboard calls **`/api/*` and `/health` on the same origin** (`VITE_API_URL=relative` at build time), so the live UI and bridge stay on one deployment.
+The dashboard calls **`/pa/*` and `/health` on the same origin** (`VITE_API_URL=relative` at build time), so the live UI and bridge stay on one deployment. (Paths are **`/pa/*`**, not **`/api/*`**: on Vercel, **`/api/*`** is reserved for the file-based `api/` serverless layout and will not reach a monolithic FastAPI app in `bridge/`.)
 
-**“NOT_FOUND” / “The page could not be found”** in the UI after **Analyze** usually means **POST `/api/*` got a CDN 404** (response body is shown in the red error box). Typical causes: **Install Command** override, wrong **Root Directory**, or a project preset that never deploys the Python function. The build keeps both **`public/`** (Vercel output) and **`bridge/_vercel_public/`** (FastAPI bundle) so **`/`, `/assets/*`, and `/api/*`** can be served correctly.
+**“NOT_FOUND” / “The page could not be found”** in the UI after **Analyze** usually means **POST `/pa/*` got a CDN 404** (response body is shown in the red error box). Typical causes: **Install Command** override, wrong **Root Directory**, or a project preset that never deploys the Python function. The build keeps both **`public/`** (Vercel output) and **`bridge/_vercel_public/`** (FastAPI bundle) so **`/`, `/assets/*`, `/pa/*`, and `/health`** can be served correctly.
 
 ## Further documentation
 

@@ -232,19 +232,19 @@ In bridge/api.py, create a FastAPI app that:
 1. Compiles and runs the C firmware binary on startup (subprocess call to `make` in firmware/)
 2. Exposes these REST endpoints:
 
-   POST /api/uart/frame
+   POST /pa/uart/frame
    Body: { "data": 0xA5, "parity": "even", "stop_bits": 1 }
    Returns: full frame breakdown as JSON (bits array, parity_bit, valid: bool)
 
-   POST /api/spi/frame  
+   POST /pa/spi/frame  
    Body: { "data": 0x3C, "mode": 0, "bit_order": "msb", "freq_hz": 1000000 }
    Returns: frame JSON with clock_edges array
 
-   POST /api/i2c/frame
+   POST /pa/i2c/frame
    Body: { "address": 0x48, "rw": "write", "data": [0x01, 0xFF] }
    Returns: full transaction breakdown JSON
 
-   GET /api/protocols
+   GET /pa/protocols
    Returns list of supported protocols with descriptions
 
 3. The C binary writes JSON to stdout — parse that JSON in Python and return it
