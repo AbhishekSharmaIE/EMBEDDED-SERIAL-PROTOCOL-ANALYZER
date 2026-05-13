@@ -35,23 +35,36 @@ The C binary is the single source of truth for bit-level framing; the bridge par
 
 ## Run locally (API + dashboard)
 
-**Always run the API from the repository root** so `from bridge.api import app` resolves.
+Use **two terminals**. The API must listen on **port 8000** before Vite can proxy `/pa` and `/health`.
+
+**Terminal A — API (repository root, not `dashboard/`):**
 
 ```bash
-# one-shot
+cd /path/to/Embedded\ Serial\ Protocol\ Analyzer
 bash scripts/run-local-api.sh
-
-# or manually
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
-make -C firmware all
-python app.py
-# same as: python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Then, in another terminal: `cd dashboard && npm ci && npm run dev` — Vite proxies `/pa` and `/health` to `http://127.0.0.1:8000`.
+Equivalent: `. .venv/bin/activate`, `pip install -r requirements.txt`, `make -C firmware all`, then **`python app.py`** or **`python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000`**. The importable module is **`app`** at the repo root (`app.py`), not `api`.
 
-**Do not** run `uvicorn bridge.api:app` unless `PYTHONPATH` includes the repo root; prefer **`app:app`** from the root as above. The older **`cd bridge && uvicorn api:app`** layout matches `bridge/Dockerfile` only when that directory is the whole app context.
+**Terminal B — dashboard:**
+
+```bash
+cd /path/to/Embedded\ Serial\ Protocol\ Analyzer/dashboard
+npm ci   # first time only
+npm run dev
+```
+
+Open **http://localhost:5173/**. If you see **`ECONNREFUSED 127.0.0.1:8000`**, Terminal A is not running or not on port **8000**.
+
+**Common mistakes**
+
+| Mistake | What happens |
+|--------|----------------|
+| `npm run dev` from the **repo root** (no `package.json` there) | `ENOENT` — run **`cd dashboard && npm run dev`**. |
+| `python -m uvicorn api:app` from the **repo root** | `Could not import module "api"` — use **`app:app`** from the root, or **`cd bridge && uvicorn api:app`** only when the app lives solely under `bridge/` (see `bridge/Dockerfile`). |
+| Starting only Vite, no API | Proxy errors to **`127.0.0.1:8000`**. |
+
+**Paths:** the bridge exposes **`/pa/*`** and **`/health`** (not **`/api/*`** — that prefix is reserved on Vercel). The Vite config proxies **`/pa`** and **`/health`** to port 8000.
 
 ## Skills demonstrated
 
