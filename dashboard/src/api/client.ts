@@ -3,6 +3,9 @@ function resolvedApiBase(): string {
   if (raw !== undefined && raw !== null) {
     const s = String(raw).trim();
     if (s.length > 0) {
+      if (s === "relative") {
+        return "";
+      }
       return s.replace(/\/$/, "");
     }
   }

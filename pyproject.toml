@@ -1,0 +1,7 @@
+[project]
+name = "embedded-serial-protocol-analyzer"
+version = "1.0.0"
+requires-python = ">=3.11"
+
+[tool.vercel]
+entrypoint = "bridge.api:app"

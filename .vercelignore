@@ -1,0 +1,8 @@
+.git
+.github
+**/.venv
+**/__pycache__
+**/node_modules
+dashboard/node_modules
+firmware/obj
+firmware/tests/test_output.txt

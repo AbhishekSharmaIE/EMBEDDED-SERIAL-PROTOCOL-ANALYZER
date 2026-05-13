@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pip install -r requirements.txt && cd dashboard && npm ci",
+  "buildCommand": "bash scripts/vercel-build.sh",
+  "env": {
+    "SKIP_FIRMWARE_BUILD": "1",
+    "VERCEL": "1"
+  }
+}

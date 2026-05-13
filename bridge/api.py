@@ -71,13 +71,26 @@ def _cors_origins() -> list[str]:
     return origins
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_cors_origins(),
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def _cors_origin_regex() -> str | None:
+    raw = os.environ.get("CORS_ORIGIN_REGEX", "").strip()
+    if raw:
+        return raw
+    if os.environ.get("VERCEL", "").lower() in ("1", "true", "yes"):
+        return r"https://.*\.vercel\.app"
+    return None
+
+
+_cors_kw: dict[str, Any] = {
+    "allow_origins": _cors_origins(),
+    "allow_credentials": False,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+_rx = _cors_origin_regex()
+if _rx is not None:
+    _cors_kw["allow_origin_regex"] = _rx
+
+app.add_middleware(CORSMiddleware, **_cors_kw)
 
 
 def _run_firmware(args: list[str]) -> dict[str, Any]:
