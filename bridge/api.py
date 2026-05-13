@@ -29,7 +29,10 @@ _here = Path(__file__).resolve()
 _default_root = _here.parent.parent
 ROOT = _path_from_env("APP_ROOT", _default_root)
 FW_DIR = _path_from_env("FW_DIR", ROOT / "firmware")
-BINARY = _path_from_env("PROTOCOL_ANALYZER", FW_DIR / "bin" / "protocol_analyzer")
+# Vercel bundles `bridge/` with `bridge.api`; copy the ELF beside this file in vercel-build.sh (see scripts/vercel-build.sh).
+_bundled_cli = _here / "protocol_analyzer"
+_default_binary = _bundled_cli if _bundled_cli.is_file() else (FW_DIR / "bin" / "protocol_analyzer")
+BINARY = _path_from_env("PROTOCOL_ANALYZER", _default_binary)
 
 # REST prefix is NOT "/api/..." — on Vercel, "/api/*" is reserved for the file-based /api/*.py
 # serverless router; a monolithic FastAPI app in bridge/ never receives those paths (edge NOT_FOUND).
@@ -87,7 +90,7 @@ async def lifespan(app: FastAPI):
     if not BINARY.is_file():
         raise RuntimeError(
             "protocol_analyzer is still missing after `make`. "
-            "Ensure firmware/bin/protocol_analyzer is bundled (see vercel.json functions.includeFiles)."
+            "Ensure bridge/protocol_analyzer exists (see scripts/vercel-build.sh)."
         )
     yield
 

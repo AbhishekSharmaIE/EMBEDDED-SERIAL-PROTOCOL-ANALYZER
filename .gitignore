@@ -19,7 +19,6 @@ venv/
 node_modules/
 dist/
 public/
-bridge/_vercel_public/
 *.log
 npm-debug.log*
 yarn-error.log*

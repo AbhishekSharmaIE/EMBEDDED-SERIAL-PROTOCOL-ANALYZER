@@ -27,6 +27,10 @@ if [[ ! -x "$BIN" ]]; then
   fi
 fi
 
+# Co-locate ELF next to bridge/api.py so Vercel's Python bundle includes it (vercel.json `functions` only matches api/**).
+cp -f "$BIN" "${ROOT}/bridge/protocol_analyzer"
+chmod +x "${ROOT}/bridge/protocol_analyzer"
+
 cd "${ROOT}/dashboard"
 npm ci
 VITE_API_URL=relative npm run build
@@ -53,4 +57,4 @@ if [[ -z "$(find "${ROOT}/public" -mindepth 1 -print -quit 2>/dev/null)" ]]; the
   printf '{}' > "${ROOT}/public/.vercel-output-dir-marker.json"
 fi
 
-echo "Vercel build OK: dashboard -> bridge/_vercel_public/ + public/ (assets only), firmware -> firmware/bin/protocol_analyzer"
+echo "Vercel build OK: dashboard -> bridge/_vercel_public/ + bridge/protocol_analyzer + public/ (assets only), firmware -> firmware/bin/protocol_analyzer"
