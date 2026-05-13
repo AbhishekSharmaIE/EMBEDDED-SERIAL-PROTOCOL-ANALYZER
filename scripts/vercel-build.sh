@@ -29,4 +29,7 @@ VITE_API_URL=relative npm run build
 rm -rf "${ROOT}/public"
 mkdir -p "${ROOT}/public"
 cp -r dist/. "${ROOT}/public/"
-echo "Vercel build OK: dashboard -> public/, firmware -> firmware/bin/protocol_analyzer"
+# Bundle UI next to FastAPI so Vercel's Python artifact includes it (public/ alone may not ship into the function).
+rm -rf "${ROOT}/bridge/_vercel_public"
+cp -r dist "${ROOT}/bridge/_vercel_public"
+echo "Vercel build OK: dashboard -> public/ + bridge/_vercel_public/, firmware -> firmware/bin/protocol_analyzer"

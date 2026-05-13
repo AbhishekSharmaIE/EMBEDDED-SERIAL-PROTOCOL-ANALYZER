@@ -12,6 +12,8 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 
@@ -207,3 +209,34 @@ def i2c_frame(body: I2cFrameRequest) -> dict[str, Any]:
         args.append(",".join(str(int(x)) for x in body.data))
 
     return _run_firmware(args)
+
+
+def _register_spa_static() -> None:
+    """Serve the Vite build when bundled with the app (Vercel serverless may not attach public/ to the function)."""
+    spa = _here / "_vercel_public"
+    if not (spa / "index.html").is_file():
+        alt = ROOT / "public"
+        if (alt / "index.html").is_file():
+            spa = alt
+        else:
+            return
+
+    assets = spa / "assets"
+    if assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets)), name="spa_assets")
+
+    index = spa / "index.html"
+
+    @app.get("/", include_in_schema=False)
+    def spa_index() -> FileResponse:
+        return FileResponse(index, media_type="text/html")
+
+    @app.get("/404.html", include_in_schema=False)
+    def spa_404() -> FileResponse:
+        p404 = spa / "404.html"
+        if p404.is_file():
+            return FileResponse(p404, media_type="text/html")
+        return FileResponse(index, media_type="text/html")
+
+
+_register_spa_static()

@@ -142,7 +142,7 @@ The repo is configured for a **single Vercel project** at the repository root:
 
 The dashboard calls **`/api/*` and `/health` on the same origin** (`VITE_API_URL=relative` at build time), so the live UI and bridge stay on one deployment.
 
-**“NOT_FOUND” / “The page could not be found”** on the production URL usually means **no successful Production deployment** (for example the build failed on an old commit). Fix the build on latest `main`, then open the deployment URL again.
+**“NOT_FOUND” / “The page could not be found”** on the production URL usually means **no successful Production deployment**, or the edge could not resolve **`/`** / **`/assets/*`**. The build copies the dashboard into **`bridge/_vercel_public/`** so FastAPI can serve **`/`** and **`/assets`** from the serverless bundle even when `public/` is not attached to the Python function.
 
 ## Further documentation
 
