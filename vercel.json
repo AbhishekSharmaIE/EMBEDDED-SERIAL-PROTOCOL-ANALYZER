@@ -6,5 +6,10 @@
   "rewrites": [
     { "source": "/health", "destination": "/app.py" },
     { "source": "/pa/:path*", "destination": "/app.py" }
-  ]
+  ],
+  "functions": {
+    "app.py": {
+      "includeFiles": "{bridge/_vercel_public/**,bridge/protocol_analyzer}"
+    }
+  }
 }

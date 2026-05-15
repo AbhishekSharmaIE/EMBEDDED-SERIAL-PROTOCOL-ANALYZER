@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -207,21 +207,50 @@ def i2c_frame_api_alias(body: I2cFrameRequest) -> dict[str, Any]:
     return _i2c_analyze(body)
 
 
-def _register_spa_static() -> None:
-    """Serve the Vite build from bridge/_vercel_public (or repo public/) when bundled with the app."""
-    spa = _here / "_vercel_public"
-    if not (spa / "index.html").is_file():
-        alt = ROOT / "public"
-        if (alt / "index.html").is_file():
-            spa = alt
-        else:
-            return
+def _resolve_spa_root() -> Path | None:
+    """Find the Vite dist folder (contains index.html) for Vercel and local layouts."""
+    candidates = (
+        _here / "_vercel_public",
+        ROOT / "public",
+        Path.cwd() / "bridge" / "_vercel_public",
+        Path.cwd() / "public",
+    )
+    for base in candidates:
+        try:
+            resolved = base.resolve()
+        except OSError:
+            continue
+        if (resolved / "index.html").is_file():
+            return resolved
+    return None
 
-    assets = spa / "assets"
-    if assets.is_dir():
-        app.mount("/assets", StaticFiles(directory=str(assets)), name="spa_assets")
+
+def _register_spa_static() -> None:
+    """Serve the Vite build from bridge/_vercel_public or repo public/. Always registers GET /."""
+    spa = _resolve_spa_root()
+    if spa is None:
+        logger.error(
+            "SPA index.html not found (checked bridge/_vercel_public, public/, cwd variants). "
+            "Run scripts/vercel-build.sh and ensure bridge/_vercel_public ships in the function bundle."
+        )
+
+        @app.get("/", include_in_schema=False)
+        def spa_bundle_missing() -> HTMLResponse:
+            return HTMLResponse(
+                "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"/>"
+                "<title>Serial Protocol Analyzer</title></head><body>"
+                "<h1>Serial Protocol Analyzer</h1>"
+                "<p>Dashboard bundle is missing on this host. The API may still work: "
+                "<a href=\"/health\">/health</a>, "
+                "<a href=\"/pa/protocols\">/pa/protocols</a>.</p>"
+                "</body></html>",
+                status_code=503,
+            )
+
+        return
 
     index = spa / "index.html"
+    assets = spa / "assets"
 
     @app.get("/", include_in_schema=False)
     def spa_index() -> FileResponse:
@@ -234,8 +263,11 @@ def _register_spa_static() -> None:
             return FileResponse(p404, media_type="text/html")
         return FileResponse(index, media_type="text/html")
 
+    if assets.is_dir():
+        try:
+            app.mount("/assets", StaticFiles(directory=str(assets)), name="spa_assets")
+        except Exception:
+            logger.exception("SPA /assets StaticFiles mount failed; / may work but JS/CSS can 404")
 
-try:
-    _register_spa_static()
-except Exception:
-    logger.exception("SPA static registration failed; /health and /pa/* are still available")
+
+_register_spa_static()
