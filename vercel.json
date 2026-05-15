@@ -1,16 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "fastapi",
+  "version": 2,
   "installCommand": "python3 -m pip install --disable-pip-version-check -r requirements.txt && cd dashboard && npm ci",
   "buildCommand": "bash scripts/vercel-build.sh",
-  "rewrites": [
-    {
-      "source": "/health",
-      "destination": "/app.py"
-    },
-    {
-      "source": "/pa/:path*",
-      "destination": "/app.py"
-    }
+  "builds": [{ "src": "app.py", "use": "@vercel/python" }],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "app.py" }
   ]
 }

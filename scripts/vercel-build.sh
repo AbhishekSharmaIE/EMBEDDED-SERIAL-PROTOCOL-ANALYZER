@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Vercel build: firmware binary + dashboard -> bridge/_vercel_public (Python bundle) and public/ (edge CDN).
-# vercel.json rewrites /health and /pa/* to app.py so API calls reach FastAPI; public/ restores fast static / + /assets.
+# Vercel build: firmware binary + dashboard -> bridge/_vercel_public (Python bundle) and public/ (edge static).
+# vercel.json uses routes: filesystem first, then catch-all to app.py so public/index.html serves / and /pa/* hits FastAPI.
 # If the builder has no gcc, copies deploy/vercel/protocol_analyzer_linux_amd64 (refresh after C changes).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
