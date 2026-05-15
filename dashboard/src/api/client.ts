@@ -9,7 +9,8 @@ function resolvedApiBase(): string {
       return s.replace(/\/$/, "");
     }
   }
-  return import.meta.env.DEV ? "" : "http://localhost:8000";
+  // Same-origin (Vercel serves /pa/* on the deployment host). Avoid defaulting to localhost in production.
+  return "";
 }
 
 const API_BASE: string = resolvedApiBase();

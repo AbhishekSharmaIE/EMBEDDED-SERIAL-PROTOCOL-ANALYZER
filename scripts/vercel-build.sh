@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Vercel build: firmware binary + dashboard -> bridge/_vercel_public (bundled into the Python serverless app).
-# Also fills ./public for Vercel projects with "Output Directory" = public (build validation).
-# Do not put "outputDirectory": "public" in vercel.json (static-only deploy breaks /health and /pa/*).
-# Full dist -> public/ restores CDN-served UI; FastAPI still handles /health and /pa when those routes hit the function.
-# FastAPI serves /, /assets, /pa/*, /health from _vercel_public (see bridge/api.py).
+# Do NOT copy the SPA into ./public: Vercel serves public/** from the edge first; unmatched paths can 404 as
+# {"detail":"Not Found"} without ever reaching FastAPI. Serving the UI from bridge/_vercel_public keeps /,
+# /assets/*, /health, and /pa/* on the same serverless app (see bridge/api.py).
+# If your Vercel project has "Output Directory" set to `public`, clear it for this repo.
 # If the builder has no gcc, copies deploy/vercel/protocol_analyzer_linux_amd64 (refresh after C changes).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -37,8 +37,4 @@ VITE_API_URL=relative npm run build
 rm -rf "${ROOT}/bridge/_vercel_public"
 cp -r dist "${ROOT}/bridge/_vercel_public"
 
-rm -rf "${ROOT}/public"
-mkdir -p "${ROOT}/public"
-cp -r dist/. "${ROOT}/public/"
-
-echo "Vercel build OK: dashboard -> bridge/_vercel_public/ + public/ (full dist), bridge/protocol_analyzer, firmware -> firmware/bin/protocol_analyzer"
+echo "Vercel build OK: dashboard -> bridge/_vercel_public/ (SPA for FastAPI only), bridge/protocol_analyzer, firmware -> firmware/bin/protocol_analyzer"
