@@ -27,7 +27,7 @@ _here = Path(__file__).resolve()
 _default_root = _here.parent.parent
 ROOT = _path_from_env("APP_ROOT", _default_root)
 FW_DIR = _path_from_env("FW_DIR", ROOT / "firmware")
-# Vercel: vercel-build.sh copies the ELF next to this file so it ships with the `bridge` package.
+# Vercel: vercel-build.sh copies the ELF next to api.py so it stays in the bridge/ package tree.
 _bundled_cli = _here / "protocol_analyzer"
 _default_binary = _bundled_cli if _bundled_cli.is_file() else (FW_DIR / "bin" / "protocol_analyzer")
 BINARY = _path_from_env("PROTOCOL_ANALYZER", _default_binary)
@@ -207,46 +207,35 @@ def i2c_frame_api_alias(body: I2cFrameRequest) -> dict[str, Any]:
     return _i2c_analyze(body)
 
 
-def _resolve_spa_root() -> Path | None:
-    """Find the Vite dist folder (contains index.html) for Vercel and local layouts."""
+def _register_spa_static() -> None:
+    """Serve the Vite dist from bridge/_vercel_public or root public/. Registers GET / always."""
     candidates = (
         _here / "_vercel_public",
         ROOT / "public",
         Path.cwd() / "bridge" / "_vercel_public",
         Path.cwd() / "public",
     )
+    spa: Path | None = None
     for base in candidates:
         try:
-            resolved = base.resolve()
+            r = base.resolve()
         except OSError:
             continue
-        if (resolved / "index.html").is_file():
-            return resolved
-    return None
+        if (r / "index.html").is_file():
+            spa = r
+            break
 
-
-def _register_spa_static() -> None:
-    """Serve the Vite build from bridge/_vercel_public or repo public/. Always registers GET /."""
-    spa = _resolve_spa_root()
     if spa is None:
-        logger.error(
-            "SPA index.html not found (checked bridge/_vercel_public, public/, cwd variants). "
-            "Run scripts/vercel-build.sh and ensure bridge/_vercel_public ships in the function bundle."
-        )
+        logger.error("No index.html under bridge/_vercel_public or public/ (run scripts/vercel-build.sh).")
 
         @app.get("/", include_in_schema=False)
-        def spa_bundle_missing() -> HTMLResponse:
+        def spa_missing() -> HTMLResponse:
             return HTMLResponse(
-                "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"/>"
-                "<title>Serial Protocol Analyzer</title></head><body>"
-                "<h1>Serial Protocol Analyzer</h1>"
-                "<p>Dashboard bundle is missing on this host. The API may still work: "
-                "<a href=\"/health\">/health</a>, "
-                "<a href=\"/pa/protocols\">/pa/protocols</a>.</p>"
-                "</body></html>",
+                "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"/><title>Serial Protocol Analyzer</title>"
+                "<body><h1>Serial Protocol Analyzer</h1><p>UI bundle missing.</p>"
+                "<p><a href=\"/health\">/health</a> · <a href=\"/pa/protocols\">/pa/protocols</a></p></body></html>",
                 status_code=503,
             )
-
         return
 
     index = spa / "index.html"
@@ -267,7 +256,7 @@ def _register_spa_static() -> None:
         try:
             app.mount("/assets", StaticFiles(directory=str(assets)), name="spa_assets")
         except Exception:
-            logger.exception("SPA /assets StaticFiles mount failed; / may work but JS/CSS can 404")
+            logger.exception("Mount /assets failed (check SPA files in serverless bundle).")
 
 
 _register_spa_static()

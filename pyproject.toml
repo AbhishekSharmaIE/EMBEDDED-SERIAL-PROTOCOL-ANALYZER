@@ -3,6 +3,5 @@ name = "embedded-serial-protocol-analyzer"
 version = "1.0.0"
 requires-python = ">=3.12"
 
-# Backup build step if project settings omit it; vercel.json buildCommand takes precedence when set.
 [tool.vercel.scripts]
 build = "bash scripts/vercel-build.sh"

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# Vercel build: firmware binary + dashboard -> bridge/_vercel_public (Python bundle) and public/ (edge static).
-# vercel.json must run this via buildCommand (do not use legacy vercel.json `builds`: it skips buildCommand).
-# Rewrites send /health and /pa/* to app.py when the edge does not serve them.
-# If the builder has no gcc, copies deploy/vercel/protocol_analyzer_linux_amd64 (refresh after C changes).
+# Vercel: dashboard build -> bridge/_vercel_public (ships with Python) + public/ (edge CDN).
+# Do not add legacy vercel.json "builds": it skips buildCommand. Do not add functions.app.py: that pattern only matches api/*.py.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -24,7 +22,6 @@ if [[ ! -x "$BIN" ]]; then
   fi
 fi
 
-# Co-locate ELF next to bridge/api.py so Vercel's Python bundle includes it (vercel.json `functions` only matches api/**).
 cp -f "$BIN" "${ROOT}/bridge/protocol_analyzer"
 chmod +x "${ROOT}/bridge/protocol_analyzer"
 
@@ -39,4 +36,4 @@ rm -rf "${ROOT}/public"
 mkdir -p "${ROOT}/public"
 cp -r dist/. "${ROOT}/public/"
 
-echo "Vercel build OK: dashboard -> bridge/_vercel_public/ + public/, bridge/protocol_analyzer, firmware -> firmware/bin/protocol_analyzer"
+echo "Vercel build OK: bridge/_vercel_public + public/, bridge/protocol_analyzer"
