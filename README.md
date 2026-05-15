@@ -138,9 +138,23 @@ flowchart TB
 
 ## Run locally
 
-**Two processes**: API on **port 8000**, dashboard on **5173** (Vite proxies `/pa`, `/api`, and `/health` to the API).
+You need **two processes** locally (Python API + Vite dev server). That is **only for development**: production serves a **built** dashboard with one API process — it is **not** why a hosted server would misbehave.
 
-**1 — API (repository root)**
+### One terminal (API + Vite together)
+
+From the **repository root**:
+
+```bash
+bash scripts/dev-one-terminal.sh
+```
+
+Then open **http://localhost:5173**. Ctrl+C stops Vite and the script stops the API.
+
+### Two terminals (same stack, manual control)
+
+**Process 1 — API** on **port 8000**, **process 2 — dashboard** on **5173** (Vite proxies `/pa`, `/api`, and `/health` to the API).
+
+**Terminal A — API (repository root)**
 
 ```bash
 bash scripts/run-local-api.sh
@@ -149,7 +163,7 @@ bash scripts/run-local-api.sh
 Or: `python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && make -C firmware all && python app.py`  
 You can also use `python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000` or `python -m uvicorn api:app --reload --host 127.0.0.1 --port 8000` from the **repo root** (both entry modules re-export the same app).
 
-**2 — Dashboard**
+**Terminal B — Dashboard**
 
 ```bash
 cd dashboard
