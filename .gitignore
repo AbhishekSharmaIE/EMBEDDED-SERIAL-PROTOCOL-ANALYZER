@@ -18,7 +18,8 @@ venv/
 # Node / dashboard
 node_modules/
 dist/
-public/
+# Root public/ is created by scripts/vercel-build.sh for Vercel. Do not gitignore it:
+# Vercel can omit gitignored paths from the deployment bundle, which yields GET / 404.
 *.log
 npm-debug.log*
 yarn-error.log*
